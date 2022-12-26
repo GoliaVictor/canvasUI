@@ -1,4 +1,4 @@
-Checklist
-switches
-normal button
+√ Checklist
+√ switches
+√ normal button
 drop-down menu
