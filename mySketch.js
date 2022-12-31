@@ -1,7 +1,11 @@
 let heart = "heart"
 let bool = false;
+let radioman = "";
 
-let ti = new TextInput("", "input", 100, true, 200)
+let ti = new TextInput("", true)
+                .placeholder("Input")
+                .maxWidth(100)
+                .maxHeight(200)
                 .bind("heart")
                 .emphasis("italic")
 
@@ -18,50 +22,66 @@ let stack = new HStack().contains([
     tbox,
     new SlideToggle()
         .align("center")
+        .radio("slide", "radioman")
         ,
     new CheckToggle()
         .align("center")
         .bind("bool")
-        .contents(tick, "on")
-        // .contents(iconStack, "off")
-        // .cornerRadius(10)
+        .contains(tick, "on")
+        .popup(new Popup("right")
+            .contains(new Panel()
+                .contains([
+                    new TextInput("", true)
+                        .placeholder("Input")
+                        ,
+                    new Text("Default text"),
+                ])
+                .background(Color.secondary)
+                .cornerRadius(10)
+                .padding(10)
+            )
+        )
+        .radio("check", "radioman")
 ])
 
 
 let panel = new Panel()
 
 panel.contains([
-    new PanelTitle("Settings"),
+    new Title("Settings"),
     new Text("Vedant").textColour(Color.pink),
     new Text("Unemployed").textColour(Color.red),
-    new PanelLabel("Heart input:"),
-    new TextInput("", "Input", Infinity, true)
+    new Label("Heart input:"),
+    new TextInput("", true)
+        .placeholder("Input")
         .paddingFactor(0)
         .bind("heart")
         ,
-    new PanelTitle("Settings")
+    new Title("Settings")
         .bind("bool")
         ,
     new Text("Vedant"),
     new Text("Unemployed"),
-    new PanelLabel("Heart input:"),
+    new Label("Heart input:"),
     new SlideToggle()
         .bind("bool")
-        // .knobColour(Color.white, "on")
-        // .knobColour(Color.transparent, "off")
-        // .knobBorder(Color.white, "on")
-        // .knobBorder(Color.white, "off")
-        // .knobBorder(Color.white.concat(100), "hover")
-        // .knobColour(Color.white.concat(100), "pressed")
+        .knobColour(Color.white, "on")
+        .knobColour(Color.transparent, "off")
+        .knobBorder(Color.white, "on")
+        .knobBorder(Color.white, "off")
+        .knobBorder(Color.white.concat(100), "hover")
+        .knobColour(Color.white.concat(100), "pressed")
         ,
-    new PanelLabel("Other input:"),
+    new Label("Other input:"),
     stack,
     new Button()
         .command(() => console.log("hi"))
-        .contents(airplayIcon)
+        .contains(airplayIcon)
     ,
 ])
 .cornerRadius(20)
+
+let title = new Title("Title")
 
 function setup() {
     createCanvas(600, 600)
@@ -73,6 +93,7 @@ function draw() {
 
     panel.render(100, 100)
     ti.render(300, 300)
+    title.render(500, 500)
     // tbox.render(400, 200)
     // toggle.render(100, 400)
     // stack.render(100, 400)

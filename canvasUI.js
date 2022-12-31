@@ -5,8 +5,8 @@ class Blank {
         this.width = width;
         this.height = height;
 
-        this.clickable = false;
-        this.typeable = false;
+        this.clickable = true;
+        this.typeable = true;
         this.alignment = "leading";
     }
 
@@ -35,7 +35,7 @@ class Button {
         this.borderWeightVar = {"default": 1, "hover": 1, "pressed": 1};
         this.cornerRadiusVar = {"default": [6, 6, 6, 6], "hover": [6, 6, 6, 6], "pressed": [6, 6, 6, 6]};
 
-        this.contentsVar = {"default": undefined, "hover": undefined, "pressed": undefined,};
+        this.contents = {"default": undefined, "hover": undefined, "pressed": undefined,};
         this.padFactor = {"default": 0.8, "hover": 0.8, "pressed": 0.8};
     }
 
@@ -61,11 +61,11 @@ class Button {
         strokeWeight(this.borderWeightVar[this.displayState])
         rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
         
-        if (this.contentsVar[this.displayState]) {
-            let scaleFactor = Math.min(this.width/this.contentsVar[this.displayState].width, this.height/this.contentsVar[this.displayState].height)*this.padFactor[this.displayState]
-            translate(this.x + this.width/2 - this.contentsVar[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contentsVar[this.displayState].height/2*scaleFactor)
+        if (this.contents[this.displayState]) {
+            let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+            translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
             scale(scaleFactor)
-            this.contentsVar[this.displayState].render(0, 0)
+            this.contents[this.displayState].render(0, 0)
         }
         pop()
     }
@@ -78,19 +78,30 @@ class Button {
         this.alignment = value;
         return this;
     }
-
-    onMousePressed() {
-        // nothing - see mouse released
-    }
-
+    
     command(func) {
         this.commandVar = func;
         return this;
     }
 
+    onMousePressed() {
+        if (this.popup) {
+            if (this.popup.typeable) {
+                this.popup.onMousePressed()
+            }
+        }
+        // nothing - see mouse released
+    }
+
+
     onMouseReleased() {
         if (this.mouseOver()) {
             this.commandVar();
+        }
+        if (this.popup) {
+            if (this.popup.typeable) {
+                this.popup.onKeyPressed()
+            }
         }
     }
 
@@ -179,14 +190,14 @@ class Button {
         return this;
     }
 
-    contents(elem, when) {
+    contains(elem, when) {
         this.checkWhen(when, () => {
-            this.contentsVar[when] = elem;
+            this.contents[when] = elem;
         }, () => {
-            this.contentsVar["default"] = elem;
-            this.contentsVar["hover"] = elem;
-            this.contentsVar["pressed"] = elem;
-        }, "button contents")
+            this.contents["default"] = elem;
+            this.contents["hover"] = elem;
+            this.contents["pressed"] = elem;
+        }, "button contains")
         return this;
     }
 
@@ -200,49 +211,6 @@ class Button {
         }, "button paddingFactor")
         return this;
     }
-}
-
-let DARKTHEME = true
-
-let Color = {
-    white: [255, 255, 255],
-    nearWhite: [242, 242, 247],
-    black: [0, 0, 0],
-    nearBlack: [28, 28, 29],
-    red: [235, 77, 61],
-    green: [101, 195, 102],
-    blue: [48, 124, 246],
-    orange: [241, 153, 55],
-    yellow: [248, 205, 70],
-    pink: [235, 68, 90],
-    purple: [163, 91, 215],
-    secondary: [138, 138, 142],
-    saffron: [242, 157, 75],
-    accent: [48, 124, 246],
-    primary: [255, 255, 255],
-    inverse: [0, 0, 0],
-    transparent: [0, 0, 0, 0],
-    nearPrimary: [242, 242, 247],
-    nearInverse: [28, 28, 29],
-
-    brighter(colour) {
-        return [colour[0]*7/6, colour[1]*7/6, colour[2]*7/6];
-    },
-
-    darkTheme: (bool) => {
-        if (bool) {
-            Color.primary = Color.white
-            Color.inverse = Color.black
-            Color.nearPrimary = Color.nearWhite
-            Color.nearInverse = Color.nearBlack
-        }
-        else {
-            Color.primary = Color.black
-            Color.inverse = Color.white
-            Color.nearPrimary = Color.nearBlack
-            Color.nearInverse = Color.nearWhite
-        }
-    },
 }
 
 class Icon {
@@ -259,6 +227,7 @@ class Icon {
         this.typeable = false;
         this.clickable = false;
         this.alignment = "center";
+        this.binding = ""
 
         // Get paths
         let temp = this.svg.split('<path d="')
@@ -338,10 +307,11 @@ class Icon {
         return command;
     }
 
-    render(x, y) {
+    render(x, y, scaleFactor=1) {
         this.x = x;
         this.y = y;
         push()
+        scale(scaleFactor)
         translate(x, y)
         fill(this.fillColourVar)
         stroke(this.strokeColourVar)
@@ -363,47 +333,13 @@ class Icon {
     }
 }
 
-const airplayIcon = new Icon(`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M5 18C3.34315 18 2 16.6569 2 15V7.8C2 6.11984 2 5.27976 2.32698 4.63803C2.6146 4.07354 3.07354 3.6146 3.63803 3.32698C4.27976 3 5.11984 3 6.8 3H17.2C18.8802 3 19.7202 3 20.362 3.32698C20.9265 3.6146 21.3854 4.07354 21.673 4.63803C22 5.27976 22 6.11984 22 7.8V15C22 16.6569 20.6569 18 19 18M8.70803 21H15.292C15.8368 21 16.1093 21 16.2467 20.8889C16.3663 20.7923 16.4347 20.6461 16.4324 20.4925C16.4298 20.3157 16.2554 20.1064 15.9065 19.6879L12.6146 15.7375C12.4035 15.4842 12.298 15.3576 12.1716 15.3114C12.0608 15.2709 11.9392 15.2709 11.8284 15.3114C11.702 15.3576 11.5965 15.4842 11.3854 15.7375L8.09346 19.6879C7.74465 20.1064 7.57024 20.3157 7.56758 20.4925C7.56526 20.6461 7.63373 20.7923 7.75326 20.8889C7.89075 21 8.16318 21 8.70803 21Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>`)
-
-const tick = new Icon(`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M20 6L9 17L4 12" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>`)
-
-class PanelTitle extends Text {
-    constructor(text) {
-        super(text);
-        this.isPanelTitle = true;
-
-        // Default styling config
-        this.paddingFactor(0)
-        this.emphasis("bold")
-        this.textSize(39)
-        // this.textColour(Color.secondary)
-    }
-}
-
-class PanelLabel extends Text {
-    constructor(text) {
-        super(text);
-        this.isPanelLabel = true;
-
-        // Default styling config
-        this.textSize(16)
-        this.paddingFactor(0)
-        this.emphasis("bold")
-        this.textColour(Color.secondary)
-    }
-}
-
 class Panel {
     constructor() {
         this.x;
         this.y;
         this.width = 0;
         this.height = 0;
-        this.elems = [];
+        this.contents = [];
         this.pad = 15;
         
         this.clickable = true;
@@ -416,21 +352,29 @@ class Panel {
         this.cornerRadiusVar = [0, 0, 0, 0];
     }
 
-    contains(elements) {
-        this.elems = elements;
-        return this;
-    }
-
     calcDimensions() {
         this.width = 0;
         this.height = this.pad;
-        for (let n = 0; n < this.elems.length; n++) {
-            let elem = this.elems[n]
+        let foundPanelTitle = false;
+        for (let n = 0; n < this.contents.length; n++) {
+            let elem = this.contents[n]
             this.width = Math.max(this.width, elem.width + 3*this.pad);
-            this.height += elem.height + this.pad/2;
-            if (elem.isPanelTitle) this.height += this.pad/2
-            if (elem.isPanelLabel) this.height += this.pad/4
+            this.height += elem.height;
+            if (elem.constructor.name == "Label") {
+                this.height += this.pad/4
+            }
+            else {
+                this.height += this.pad/2
+                if (elem.constructor.name == "Title") {
+                    if (n != 0) this.height += this.pad/2
+                }
+            }
+            // if (elem.constructor.name == "Title") {
+            //     this.height += this.pad/2
+            //     foundPanelTitle = true;
+            // }
         }
+        this.height += this.pad/2
     }
 
     render(x, y) {
@@ -444,12 +388,12 @@ class Panel {
         rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
         pop()
         let ySweep = this.pad;
-        for (let n = 0; n < this.elems.length; n++) {
-            const elem = this.elems[n]
+        for (let n = 0; n < this.contents.length; n++) {
+            const elem = this.contents[n]
             switch (elem.alignment) {
                 case "leading":
-                    if (elem.isPanelTitle) {
-                        ySweep += this.pad/2
+                    if (elem.constructor.name == "Title") {
+                        if (n != 0) ySweep += this.pad/2
                         elem.render(this.x + this.pad, this.y + ySweep);
                     }
                     else{
@@ -457,11 +401,14 @@ class Panel {
                     }
                     break;
                 case "center":
+                    if (elem.constructor.name == "Title") {
+                        if (n != 0) ySweep += this.pad/2
+                    }
                     elem.render(this.x + (this.width - elem.width)/2, this.y + ySweep);
                     break;
                 case "trailing":
-                    if (elem.isPanelTitle) {
-                        ySweep += this.pad/2
+                    if (elem.constructor.name == "Title") {
+                        if (n != 0) ySweep += this.pad/2
                         elem.render(this.x + this.width - elem.width - this.pad, this.y + ySweep);
                     }
                     else{
@@ -470,7 +417,7 @@ class Panel {
                     break;
             }
 
-            if (elem.isPanelLabel) {
+            if (elem.constructor.name == "Label") {
                 ySweep += elem.height + this.pad/4;
             }
             else {
@@ -479,21 +426,26 @@ class Panel {
         }
     }
 
+    contains(elements) {
+        this.contents = elements;
+        return this;
+    }
+
     onKeyPressed() {
-        for (let n = 0; n < this.elems.length; n++) {
-            if (this.elems[n].typeable) this.elems[n].onKeyPressed()
+        for (let n = 0; n < this.contents.length; n++) {
+            if (this.contents[n].typeable) this.contents[n].onKeyPressed()
         }
     }
 
     onMousePressed() {
-        for (let n = 0; n < this.elems.length; n++) {
-            if (this.elems[n].clickable) this.elems[n].onMousePressed()
+        for (let n = 0; n < this.contents.length; n++) {
+            if (this.contents[n].clickable) this.contents[n].onMousePressed()
         }
     }
 
     onMouseReleased() {
-        for (let n = 0; n < this.elems.length; n++) {
-            if (this.elems[n].clickable) this.elems[n].onMouseReleased()
+        for (let n = 0; n < this.contents.length; n++) {
+            if (this.contents[n].clickable) this.contents[n].onMouseReleased()
         }
     }
 
@@ -511,14 +463,13 @@ class Panel {
         return this;
     }
 
-
-    border(border) {
-        this.borderVar = border;
+    border(value) {
+        this.borderVar = value;
         return this;
     }
 
-    borderWeight(weight) {
-        this.borderWeightVar = weight;
+    borderWeight(value) {
+        this.borderWeightVar = value;
         return this;
     }
 
@@ -535,11 +486,156 @@ class Panel {
     }
 }
 
+class Popup {
+    constructor(side="right") {
+        this.clickable = true;
+        this.typeable = true;
+
+        this.side = side; // left, right, top, bottom
+        switch (this.side) {
+            case "left":
+                this.offsetVar = {x: -15 , y: 0};
+                break;
+            case "right":
+                this.offsetVar = {x: 15 , y: 0};
+                break;
+            case "top":
+                this.offsetVar = {x: 0 , y: -15};
+                break;
+            case "bottom":
+                this.offsetVar = {x: 0 , y: 15};
+                break;
+        }
+        this.contentOffsetVar = {x: this.offsetVar.x/2, y: this.offsetVar.y/2};
+        
+        this.x;
+        this.y;
+        this.width = this.offsetVar.x + this.contentOffsetVar.x;
+        this.height = this.offsetVar.y + this.contentOffsetVar.y;
+        this.contents;
+
+        this.beakWidthVar = 15;
+    }
+
+    render(x, y) {
+        this.x = x;
+        this.y = y;
+
+        if (this.contents) {
+            if (this.side == "left" || this.side == "right") {
+                // Left or right
+                if (this.side == "left") {
+                    // Left
+                    this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2)
+                    push();
+                    fill(this.contents.backgroundVar);
+                    stroke(this.contents.borderVar);
+                    strokeWeight(this.contents.borderWeightVar);
+                    triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x - 1, this.y + this.offsetVar.y + this.contentOffsetVar.y-this.beakWidthVar/2, this.x + this.offsetVar.x + this.contentOffsetVar.x - 1, this.y + this.offsetVar.y + this.contentOffsetVar.y+this.beakWidthVar/2);
+                    pop();
+                }
+                else {
+                    // Right
+                    this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2)
+                    push();
+                    fill(this.contents.backgroundVar);
+                    stroke(this.contents.borderVar);
+                    strokeWeight(this.contents.borderWeightVar);
+                    triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x + 1, this.y + this.offsetVar.y + this.contentOffsetVar.y-this.beakWidthVar/2, this.x + this.offsetVar.x + this.contentOffsetVar.x + 1, this.y + this.offsetVar.y + this.contentOffsetVar.y+this.beakWidthVar/2);
+                    pop();
+                }
+            }
+            else {
+                // Top or bottom
+                if (this.side == "top") {
+                    // Top
+                    this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height)
+                    push();
+                    fill(this.contents.backgroundVar);
+                    stroke(this.contents.borderVar);
+                    strokeWeight(this.contents.borderWeightVar);
+                    triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x-this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - 1, this.x + this.offsetVar.x + this.contentOffsetVar.x+this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - 1);
+                    pop();
+                }
+                else {
+                    // Bottom
+                    this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2, this.y + this.offsetVar.y + this.contentOffsetVar.y)
+                    push();
+                    fill(this.contents.backgroundVar);
+                    stroke(this.contents.borderVar);
+                    strokeWeight(this.contents.borderWeightVar);
+                    triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x-this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y + 1, this.x + this.offsetVar.x + this.contentOffsetVar.x+this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y + 1);
+                    pop();
+                }
+            }
+        }
+    }
+
+    contains(elem) {
+        this.contents = elem;
+        return this;
+    }
+
+    offset(newOffset) {
+        if (newOffset.x == undefined && newOffset.y) {
+            // Only y
+            this.offsetVar.y = newOffset.y
+        }
+        else if (newOffset.x && newOffset.y == undefined) {
+            // Only x
+            this.offsetVar.x = newOffset.x
+        }
+        else {
+            // Both or neither(error)
+            this.offsetVar = newOffset;
+        }
+        return this;
+    }
+    contentOffset(newOffset) {
+        if (newOffset.x == undefined && newOffset.y) {
+            // Only y
+            this.contentOffsetVar.y = newOffset.y
+        }
+        else if (newOffset.x && newOffset.y == undefined) {
+            // Only x
+            this.contentOffsetVar.x = newOffset.x
+        }
+        else {
+            // Both or neither(error)
+            this.contentOffsetVar = newOffset;
+        }
+        return this;
+    }
+
+    beakWidth(value) {
+        this.beakWidthVar = value;
+        return this;
+    }
+
+    onKeyPressed() {
+        if (this.contents.typeable) {
+            this.contents.onKeyPressed()
+        }
+    }
+
+    onMousePressed() {
+        if (this.contents.clickable) {
+            this.contents.onMousePressed();
+        }
+    }
+
+    onMouseReleased() {
+        if (this.contents.clickable) {
+            this.contents.onMouseReleased();
+        }
+    }
+}
+
 class Stack {
     constructor() {
         this.width = 0;
         this.height = 0;
-        this.elems = [];
+        this.contents = [];
         this.spacingVar = 15;
         
         this.clickable = true;
@@ -553,7 +649,7 @@ class Stack {
     }
 
     contains(array) {
-        this.elems = array;
+        this.contents = array;
         return this;
     }
 
@@ -577,13 +673,13 @@ class Stack {
         return this;
     }
 
-    border(border) {
-        this.borderVar = border;
+    border(value) {
+        this.borderVar = value;
         return this;
     }
 
-    borderWeight(weight) {
-        this.borderWeightVar = weight;
+    borderWeight(value) {
+        this.borderWeightVar = value;
         return this;
     }
 
@@ -600,20 +696,20 @@ class Stack {
     }
 
     onKeyPressed() {
-        for (let n = 0; n < this.elems.length; n++) {
-            if (this.elems[n].typeable) this.elems[n].onKeyPressed()
+        for (let n = 0; n < this.contents.length; n++) {
+            if (this.contents[n].typeable) this.contents[n].onKeyPressed()
         }
     }
 
     onMousePressed() {
-        for (let n = 0; n < this.elems.length; n++) {
-            if (this.elems[n].clickable) this.elems[n].onMousePressed()
+        for (let n = 0; n < this.contents.length; n++) {
+            if (this.contents[n].clickable) this.contents[n].onMousePressed()
         }
     }
 
     onMouseReleased() {
-        for (let n = 0; n < this.elems.length; n++) {
-            if (this.elems[n].clickable) this.elems[n].onMouseReleased()
+        for (let n = 0; n < this.contents.length; n++) {
+            if (this.contents[n].clickable) this.contents[n].onMouseReleased()
         }
     }
 }
@@ -626,11 +722,11 @@ class VStack extends Stack {
     calcDimensions() {
         this.width = 0;
         this.height = 0;
-        for (let n = 0; n < this.elems.length; n++) {
-            this.width = Math.max(this.width, this.elems[n].width);
-            this.height += this.elems[n].height + this.spacingVar;
+        for (let n = 0; n < this.contents.length; n++) {
+            this.width = Math.max(this.width, this.contents[n].width);
+            this.height += this.contents[n].height + this.spacingVar;
         }
-        if (this.elems.length > 0) {
+        if (this.contents.length > 0) {
             this.height -= this.spacingVar;
         }
     }
@@ -646,17 +742,17 @@ class VStack extends Stack {
         rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
         pop()
         let ySweep = 0;
-        for (let n = 0; n < this.elems.length; n++) {
-            let elem = this.elems[n]
+        for (let n = 0; n < this.contents.length; n++) {
+            let elem = this.contents[n]
             switch (elem.alignment) {
                 case "leading":
                     elem.render(this.x, this.y + ySweep);
                     break;
                 case "center":
-                    elem.render(this.x + (this.width - this.elems[n].width)/2, this.y + ySweep);
+                    elem.render(this.x + (this.width - this.contents[n].width)/2, this.y + ySweep);
                     break;
                 case "trailing":
-                    elem.render(this.x + this.width - this.elems[n].width, this.y + ySweep);
+                    elem.render(this.x + this.width - this.contents[n].width, this.y + ySweep);
                     break;
             }
             ySweep += elem.height + this.spacingVar;
@@ -672,11 +768,11 @@ class HStack extends Stack {
     calcDimensions() {
         this.width = 0;
         this.height = 0;
-        for (let n = 0; n < this.elems.length; n++) {
-            this.height = Math.max(this.height, this.elems[n].height);
-            this.width += this.elems[n].width + this.spacingVar;
+        for (let n = 0; n < this.contents.length; n++) {
+            this.height = Math.max(this.height, this.contents[n].height);
+            this.width += this.contents[n].width + this.spacingVar;
         }
-        if (this.elems.length > 0) {
+        if (this.contents.length > 0) {
             this.width -= this.spacingVar;
         }
     }
@@ -692,20 +788,20 @@ class HStack extends Stack {
         rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
         pop()
         let xSweep = 0;
-        for (let n = 0; n < this.elems.length; n++) {
-            let elem = this.elems[n]
+        for (let n = 0; n < this.contents.length; n++) {
+            let elem = this.contents[n]
             switch (elem.alignment) {
                 case "leading":
-                    this.elems[n].render(this.x + xSweep, this.y );
+                    this.contents[n].render(this.x + xSweep, this.y );
                     break;
                 case "center":
-                    this.elems[n].render(this.x + xSweep, (2*this.y + this.height - this.elems[n].height)/2);
+                    this.contents[n].render(this.x + xSweep, (2*this.y + this.height - this.contents[n].height)/2);
                     break;
                 case "trailing":
-                    this.elems[n].render(this.x + xSweep, this.y + this.height - this.elems[n].height);
+                    this.contents[n].render(this.x + xSweep, this.y + this.height - this.contents[n].height);
                     break;
             }
-            xSweep += this.elems[n].width + this.spacingVar;
+            xSweep += this.contents[n].width + this.spacingVar;
         }
     }
 }
@@ -740,11 +836,6 @@ class Text {
 
     bind(target) {
         this.binding = target;
-        return this;
-    }
-
-    unbind() {
-        this.binding = "";
         return this;
     }
 
@@ -797,13 +888,13 @@ class Text {
         return this;
     }
 
-    border(border) {
-        this.borderVar = border;
+    border(value) {
+        this.borderVar = value;
         return this;
     }
 
-    borderWeight(weight) {
-        this.borderWeightVar = weight;
+    borderWeight(value) {
+        this.borderWeightVar = value;
         return this;
     }
 
@@ -819,8 +910,8 @@ class Text {
         return this;
     }
 
-    textSize(size) {
-        this.tSize = size;
+    textSize(value) {
+        this.tSize = value;
         return this;
     }
 
@@ -839,8 +930,8 @@ class Text {
         return this;
     }
 
-    emphasis(p5TextStyle) {
-        this.emphasisVar = p5TextStyle;
+    emphasis(style) {
+        this.emphasisVar = style;
         return this;
     }
 
@@ -849,22 +940,45 @@ class Text {
         return this;
     }
 
-    paddingFactor(newPFactor) {
-        this.pFactor = newPFactor;
+    paddingFactor(value) {
+        this.pFactor = value;
         return this;
     }
 }
 
+class Title extends Text {
+    constructor(text) {
+        super(text);
+
+        // Default styling config
+        this.paddingFactor(0)
+        this.emphasis("bold")
+        this.textSize(39)
+    }
+}
+
+class Label extends Text {
+    constructor(text) {
+        super(text);
+
+        // Default styling config
+        this.textSize(16)
+        this.paddingFactor(0)
+        this.emphasis("bold")
+        this.textColour(Color.secondary)
+    }
+}
+
 class TextInput extends Text {
-    constructor(defaultText, placeholder, maxWidth=Infinity, doMultiLine=false, maxHeight=Infinity) {
+    constructor(defaultText="", doMultiLine=false) {
         super(defaultText)
         this.editing = false;
         this.edited = false;
-        this.placeholder = placeholder;
+        this.placeholderVar = "";
         this.cursorAfter = this.t;
-        this.maxWidth = maxWidth;
         this.doMultiLine = doMultiLine;
-        this.maxHeight = maxHeight;
+        this.maxWidthVar = Infinity;
+        this.maxHeightVar = Infinity;
 
         this.typeable = true;
         this.clickable = true;
@@ -910,7 +1024,7 @@ class TextInput extends Text {
         if (this.fontVar) textFont(this.fontVar)
         let lines;
         if (this.t == "") {
-            lines = this.placeholder.split("\n")
+            lines = this.placeholderVar.split("\n")
             fill(this.textColourVar[0], this.textColourVar[1], this.textColourVar[2], (this.textColourVar[3] ?? 255)*0.4)
             stroke(this.textBorderVar[0], this.textBorderVar[1], this.textBorderVar[2], (this.textBorderVar[3] ?? 255)*0.4)
         }
@@ -1020,7 +1134,7 @@ class TextInput extends Text {
                         let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
                         let cursorAfterArray = this.cursorAfter.split("\n");
                         let cursorAfterOnThisLine = cursorAfterArray[lineNumber]
-                        if (cursorAfterOnThisLine == "" && textWidth(lines[lineNumber])+textWidth(lines[lineNumber-1]) > this.maxWidth) break;
+                        if (cursorAfterOnThisLine == "" && textWidth(lines[lineNumber])+textWidth(lines[lineNumber-1]) > this.maxWidthVar) break;
                         this.t = this.t.slice(0, this.cursorAfter.length-1) + this.t.slice(this.cursorAfter.length);
                         this.cursorAfter = this.cursorAfter.slice(0, -1);
                         this.showingCursor = true;
@@ -1031,7 +1145,7 @@ class TextInput extends Text {
                     break;
                 case "Enter":
                     if (this.doMultiLine && keyIsDown(SHIFT)) {
-                        if (this.height + this.tSize <= this.maxHeight) {
+                        if (this.height + this.tSize <= this.maxHeightVar) {
                             this.t = this.t.slice(0, this.cursorAfter.length) + "\n" + this.t.slice(this.cursorAfter.length)
                             this.cursorAfter += "\n"
                             this.showingCursor = true;
@@ -1055,7 +1169,7 @@ class TextInput extends Text {
                         textSize(this.tSize)
                         if (this.emphasisVar) textStyle(this.emphasisVar)
                         if (this.fontVar) textFont(this.fontVar)
-                        if (textWidth(lines[lineNumber])+textWidth(key) <= this.maxWidth) {
+                        if (textWidth(lines[lineNumber])+textWidth(key) <= this.maxWidthVar) {
                             this.t = this.t.slice(0, this.cursorAfter.length) + key + this.t.slice(this.cursorAfter.length)
                             this.cursorAfter += key;
                             this.showingCursor = true;
@@ -1132,13 +1246,28 @@ class TextInput extends Text {
         return false;
     }
 
+    placeholder(text) {
+        this.placeholderVar = text;
+        return this;
+    }
+
+    maxWidth(value) {
+        this.maxWidthVar = value;
+        return this;
+    }
+
+    maxHeight(value) {
+        this.maxHeightVar = value;
+        return this;
+    }
+
     cursorColour(colour) {
         this.cursorColourVar = colour;
         return this;
     }
 
-    cursorWeight(weight) {
-        this.cursorWeightVar = weight;
+    cursorWeight(value) {
+        this.cursorWeightVar = value;
         return this;
     }
 }
@@ -1151,12 +1280,16 @@ class Toggle {
         this.height = height;
 
         this.clickable = true;
-        this.typeable = false;
+        this.typeable = true;
         this.alignment = "leading";
 
         this.displayState = "default off";
         this.on = false;
         this.binding = "";
+        this.radioName = "";
+        this.radioBinding = "";
+
+        this.popupVar;
 
         this.cornerRadiusVar;
         this.backgroundVar = {"default on": Color.accent, "default off": Color.secondary, "hover on": Color.accent, "hover off": Color.secondary, "pressed on": Color.brighter(Color.accent), "pressed off": Color.brighter(Color.secondary)};
@@ -1164,13 +1297,31 @@ class Toggle {
         this.borderWeightVar = {"default on": 1, "default off": 1, "hover on": 1, "hover off": 1, "pressed on": 1, "pressed off": 1};
     }
 
+    toggle() {
+        this.set(!this.on)
+    }
+    set(value) {
+        this.on = value;
+        this.displayState = this.on ? "default on" : "default off"
+        if (this.binding != "") eval(`${this.binding} = this.on`)
+        if (this.radioBinding != "") {
+            if (value == true) {
+                eval(`${this.radioBinding} = this.radioName`)
+            }
+            else {
+                eval(`${this.radioBinding} = ""`)
+            }
+        }
+    }
+
     bind(target) {
         this.binding = target;
         return this;
     }
 
-    unbind() {
-        this.binding = "";
+    radio(radioName, target) {
+        this.radioName = radioName
+        this.radioBinding = target;
         return this;
     }
 
@@ -1183,15 +1334,32 @@ class Toggle {
         return this;
     }
 
+    onKeyPressed() {
+        if (this.popupVar && this.on) {
+            if (this.popupVar.typeable) {
+                this.popupVar.onKeyPressed()
+            }
+        }
+    }
+
     onMousePressed() {
         // nothing - see mouse released
+        if (this.popupVar && this.on) {
+            if (this.popupVar.clickable) {
+                this.popupVar.onMousePressed()
+            }
+        }
     }
 
     onMouseReleased() {
         if (this.mouseOver()) {
-            this.on = !this.on;
-            this.displayState = this.on ? "default on": "default off";
+            this.toggle()
             if (this.binding != "") eval(`${this.binding} = this.on`)
+        }
+        if (this.popupVar && this.on) {
+            if (this.popupVar.clickable) {
+                this.popupVar.onMouseReleased()
+            }
         }
     }
 
@@ -1207,6 +1375,11 @@ class Toggle {
 
     setHeight(value) {
         this.height = value;
+        return this;
+    }
+
+    popup(popup) {
+        this.popupVar = popup;
         return this;
     }
 
@@ -1364,13 +1537,17 @@ class SlideToggle extends Toggle {
         else {
             this.displayState = this.on ? "default on" : "default off"
         }
-
-
+        
         if (this.binding != "") {
             if (this.on != eval(this.binding)) {
                 // binding changed so update this.displayState and this.on
-                this.on = eval(this.binding)
-                this.displayState = this.on ? "default on" : "default off"
+                this.set(eval(this.binding))
+            }
+        }
+
+        if (this.radioBinding != "") {
+            if (eval(this.radioBinding) != this.radioName && eval(this.radioBinding) != "") {
+                if (this.on) this.set(false)
             }
         }
 
@@ -1393,6 +1570,26 @@ class SlideToggle extends Toggle {
             rect(this.x + this.height/2, this.y + this.height/2, this.height-4, this.height-4, this.knobCornerRadiusVar[this.displayState][0], this.knobCornerRadiusVar[this.displayState][1], this.knobCornerRadiusVar[this.displayState][2], this.knobCornerRadiusVar[this.displayState][3])
         }
         pop()
+
+        if (this.popupVar && this.on) {
+            switch (this.popupVar.side) {
+                case "left":
+                    this.popupVar.render(this.x, this.y + this.height/2)
+                    break;
+                case "right":
+                    this.popupVar.render(this.x + this.width, this.y + this.height/2)
+                    break;
+                case "top":
+                    this.popupVar.render(this.x + this.width/2, this.y)
+                    break;
+                    case "bottom":
+                    this.popupVar.render(this.x + this.width/2, this.y + this.height)
+                    break;
+                default:
+                    console.error(`Popup has invalid side: ${this.popupVar.side}`)
+                    break;
+            }
+        }
     }
 
     knobColour(colour, when) {
@@ -1506,7 +1703,7 @@ class CheckToggle extends Toggle {
 
         this.cornerRadiusVar = {"default on": [4, 4, 4, 4], "default off": [4, 4, 4, 4], "hover on": [4, 4, 4, 4], "hover off": [4, 4, 4, 4], "pressed on": [4, 4, 4, 4], "pressed off": [4, 4, 4, 4]};
 
-        this.contentsVar = {"default on": undefined, "default off": undefined, "hover on": undefined, "hover off": undefined, "pressed on": undefined, "pressed off": undefined};
+        this.contents = {"default on": undefined, "default off": undefined, "hover on": undefined, "hover off": undefined, "pressed on": undefined, "pressed off": undefined};
 
         this.padFactor = {"default on": 0.8, "default off": 0.8, "hover on": 0.8, "hover off": 0.8, "pressed on": 0.8, "pressed off": 0.8};
     }
@@ -1526,11 +1723,19 @@ class CheckToggle extends Toggle {
             this.displayState = this.on ? "default on" : "default off"
         }
 
+        
         if (this.binding != "") {
             if (this.on != eval(this.binding)) {
                 // binding changed so update this.displayState and this.on
-                this.on = eval(this.binding)
-                this.displayState = this.on ? "default on" : "default off"
+                this.set(eval(this.binding))
+                console.log(this.displayState)
+            }
+        }
+
+        if (this.radioBinding != "") {
+            if (eval(this.radioBinding) != this.radioName && eval(this.radioBinding) != "") {
+                if (this.on) this.set(false)
+                console.log(eval(this.radioBinding), this.radioName)
             }
         }
 
@@ -1541,33 +1746,53 @@ class CheckToggle extends Toggle {
         strokeWeight(this.borderWeightVar[this.displayState])
         rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
         
-        if (this.contentsVar[this.displayState]) {
-            let scaleFactor = Math.min(this.width/this.contentsVar[this.displayState].width, this.height/this.contentsVar[this.displayState].height)*this.padFactor[this.displayState]
-            translate(this.x + this.width/2 - this.contentsVar[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contentsVar[this.displayState].height/2*scaleFactor)
+        if (this.contents[this.displayState]) {
+            let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+            translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
             scale(scaleFactor)
-            this.contentsVar[this.displayState].render(0, 0)
+            this.contents[this.displayState].render(0, 0)
         }
         pop()
+
+        if (this.popupVar && this.on) {
+            switch (this.popupVar.side) {
+                case "left":
+                    this.popupVar.render(this.x, this.y + this.height/2)
+                    break;
+                case "right":
+                    this.popupVar.render(this.x + this.width, this.y + this.height/2)
+                    break;
+                case "top":
+                    this.popupVar.render(this.x + this.width/2, this.y)
+                    break;
+                    case "bottom":
+                    this.popupVar.render(this.x + this.width/2, this.y + this.height)
+                    break;
+                default:
+                    console.error(`Popup has invalid side: ${this.popupVar.side}`)
+                    break;
+            }
+        }
     }
 
-    contents(elem, when) {
+    contains(elem, when) {
         this.checkWhen(when, () => {
-            this.contentsVar[when] = elem;
+            this.contents[when] = elem;
         }, () => {
-            this.contentsVar["default on"] = elem;
-            this.contentsVar["default off"] = elem;
-            this.contentsVar["hover on"] = elem;
-            this.contentsVar["hover off"] = elem;
-            this.contentsVar["pressed on"] = elem;
-            this.contentsVar["pressed off"] = elem;
+            this.contents["default on"] = elem;
+            this.contents["default off"] = elem;
+            this.contents["hover on"] = elem;
+            this.contents["hover off"] = elem;
+            this.contents["pressed on"] = elem;
+            this.contents["pressed off"] = elem;
         }, () => {
-            this.contentsVar[`${when} on`] = elem;
-            this.contentsVar[`${when} off`] = elem;
+            this.contents[`${when} on`] = elem;
+            this.contents[`${when} off`] = elem;
         }, () => {
-            this.contentsVar[`default ${when}`] = elem;
-            this.contentsVar[`hover ${when}`] = elem;
-            this.contentsVar[`pressed ${when}`] = elem;
-        }, "check toggle contents")
+            this.contents[`default ${when}`] = elem;
+            this.contents[`hover ${when}`] = elem;
+            this.contents[`pressed ${when}`] = elem;
+        }, "check toggle contains")
         return this;
     }
 
