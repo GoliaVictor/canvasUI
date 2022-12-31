@@ -8,15 +8,19 @@ class Blank {
         this.clickable = true;
         this.typeable = true;
         this.alignment = "leading";
+        this.phantomBinding = "";
     }
 
     render(x, y) {
         this.x = x;
         this.y = y;
     }
-}
 
-class Button {
+    phantom(target) {
+        this.phantomBinding = target;
+        return this;
+    }
+}class Button {
     constructor (width=80, height=25) {
         this.x;
         this.y;
@@ -26,6 +30,8 @@ class Button {
         this.typeable = false;
         this.clickable = true;
         this.alignment = "center";
+        this.hiddenBinding = "";
+        this.phantomBinding = "";
 
         this.displayState = "default";
         this.commandVar;
@@ -43,31 +49,35 @@ class Button {
         this.x = x;
         this.y = y;
 
-        if (this.mouseOver()) {
-            cursor("pointer")
-            this.displayState = `hover`
-            if (mouseIsPressed) {
-                this.displayState = `pressed`
+        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+            if (this.mouseOver()) {
+                cursor("pointer")
+                this.displayState = `hover`
+                if (mouseIsPressed) {
+                    this.displayState = `pressed`
+                }
             }
+            else {
+                this.displayState = "default"
+            }
+    
+            push()
+            // Background
+            fill(this.backgroundVar[this.displayState])
+            stroke(this.borderVar[this.displayState])
+            strokeWeight(this.borderWeightVar[this.displayState])
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
+            
+            if (this.contents[this.displayState]) {
+                if (this.contents[this.displayState].phantomBinding == "" || eval(this.contents[this.displayState].phantomBinding) == false) {
+                    let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+                    translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
+                    scale(scaleFactor)
+                    this.contents[this.displayState].render(0, 0)
+                }
+            }
+            pop()
         }
-        else {
-            this.displayState = "default"
-        }
-
-        push()
-        // Background
-        fill(this.backgroundVar[this.displayState])
-        stroke(this.borderVar[this.displayState])
-        strokeWeight(this.borderWeightVar[this.displayState])
-        rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
-        
-        if (this.contents[this.displayState]) {
-            let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
-            translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
-            scale(scaleFactor)
-            this.contents[this.displayState].render(0, 0)
-        }
-        pop()
     }
 
     align(value) {
@@ -78,6 +88,15 @@ class Button {
         this.alignment = value;
         return this;
     }
+
+    hidden(target) {
+        this.hiddenBinding = target;
+        return this;
+    }
+    phantom(target) {
+        this.phantomBinding = target;
+        return this;
+    }
     
     command(func) {
         this.commandVar = func;
@@ -85,22 +104,24 @@ class Button {
     }
 
     onMousePressed() {
-        if (this.popup) {
-            if (this.popup.typeable) {
-                this.popup.onMousePressed()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            if (this.popup) {
+                if (this.popup.typeable) {
+                    this.popup.onMousePressed()
+                }
             }
         }
-        // nothing - see mouse released
     }
 
-
     onMouseReleased() {
-        if (this.mouseOver()) {
-            this.commandVar();
-        }
-        if (this.popup) {
-            if (this.popup.typeable) {
-                this.popup.onKeyPressed()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            if (this.mouseOver()) {
+                this.commandVar();
+            }
+            if (this.popup) {
+                if (this.popup.typeable) {
+                    this.popup.onKeyPressed()
+                }
             }
         }
     }
@@ -211,9 +232,7 @@ class Button {
         }, "button paddingFactor")
         return this;
     }
-}
-
-class Icon {
+}class Icon {
     constructor(svg) {
         this.svg = svg;
         this.graphicString = "";
@@ -227,6 +246,9 @@ class Icon {
         this.typeable = false;
         this.clickable = false;
         this.alignment = "center";
+        this.hiddenBinding = "";
+        this.phantomBinding = "";
+
         this.binding = ""
 
         // Get paths
@@ -310,13 +332,24 @@ class Icon {
     render(x, y, scaleFactor=1) {
         this.x = x;
         this.y = y;
-        push()
-        scale(scaleFactor)
-        translate(x, y)
-        fill(this.fillColourVar)
-        stroke(this.strokeColourVar)
-        eval(this.graphicString)
-        pop()
+        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+            push()
+            scale(scaleFactor)
+            translate(x, y)
+            fill(this.fillColourVar)
+            stroke(this.strokeColourVar)
+            eval(this.graphicString)
+            pop()
+        }
+    }
+
+    hidden(target) {
+        this.hiddenBinding = target;
+        return this;
+    }
+    phantom(target) {
+        this.phantomBinding = target;
+        return this;
     }
 
     fillColour(colour) {
@@ -344,7 +377,9 @@ class Panel {
         
         this.clickable = true;
         this.typeable = true;
-        this.alignemnt = "leading"
+        this.alignment = "leading"
+        this.hiddenBinding = "";
+        this.phantomBinding = "";
 
         this.backgroundVar = Color.nearInverse;
         this.borderVar = Color.transparent;
@@ -355,24 +390,21 @@ class Panel {
     calcDimensions() {
         this.width = 0;
         this.height = this.pad;
-        let foundPanelTitle = false;
         for (let n = 0; n < this.contents.length; n++) {
             let elem = this.contents[n]
-            this.width = Math.max(this.width, elem.width + 3*this.pad);
-            this.height += elem.height;
-            if (elem.constructor.name == "Label") {
-                this.height += this.pad/4
-            }
-            else {
-                this.height += this.pad/2
-                if (elem.constructor.name == "Title") {
-                    if (n != 0) this.height += this.pad/2
+            if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+                this.width = Math.max(this.width, elem.width + 3*this.pad);
+                this.height += elem.height;
+                if (elem.constructor.name == "Label") {
+                    this.height += this.pad/4
+                }
+                else {
+                    this.height += this.pad/2
+                    if (elem.constructor.name == "Title") {
+                        if (n != 0) this.height += this.pad/2
+                    }
                 }
             }
-            // if (elem.constructor.name == "Title") {
-            //     this.height += this.pad/2
-            //     foundPanelTitle = true;
-            // }
         }
         this.height += this.pad/2
     }
@@ -380,48 +412,53 @@ class Panel {
     render(x, y) {
         this.x = x;
         this.y = y;
-        push()
         this.calcDimensions()
-        fill(this.backgroundVar)
-        stroke(this.borderVar)
-        strokeWeight(this.borderWeightVar)
-        rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-        pop()
-        let ySweep = this.pad;
-        for (let n = 0; n < this.contents.length; n++) {
-            const elem = this.contents[n]
-            switch (elem.alignment) {
-                case "leading":
-                    if (elem.constructor.name == "Title") {
-                        if (n != 0) ySweep += this.pad/2
-                        elem.render(this.x + this.pad, this.y + ySweep);
-                    }
-                    else{
-                        elem.render(this.x + 1.5*this.pad, this.y + ySweep);
-                    }
-                    break;
-                case "center":
-                    if (elem.constructor.name == "Title") {
-                        if (n != 0) ySweep += this.pad/2
-                    }
-                    elem.render(this.x + (this.width - elem.width)/2, this.y + ySweep);
-                    break;
-                case "trailing":
-                    if (elem.constructor.name == "Title") {
-                        if (n != 0) ySweep += this.pad/2
-                        elem.render(this.x + this.width - elem.width - this.pad, this.y + ySweep);
-                    }
-                    else{
-                        elem.render(this.x + this.width - elem.width - 1.5*this.pad, this.y + ySweep);
-                    }
-                    break;
-            }
 
-            if (elem.constructor.name == "Label") {
-                ySweep += elem.height + this.pad/4;
-            }
-            else {
-                ySweep += elem.height + this.pad/2;
+        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+            push()
+            fill(this.backgroundVar)
+            stroke(this.borderVar)
+            strokeWeight(this.borderWeightVar)
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+            pop()
+            let ySweep = this.pad;
+            for (let n = 0; n < this.contents.length; n++) {
+                const elem = this.contents[n]
+                if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+                    switch (elem.alignment) {
+                        case "leading":
+                            if (elem.constructor.name == "Title") {
+                                if (n != 0) ySweep += this.pad/2
+                                elem.render(this.x + this.pad, this.y + ySweep);
+                            }
+                            else{
+                                elem.render(this.x + 1.5*this.pad, this.y + ySweep);
+                            }
+                            break;
+                        case "center":
+                            if (elem.constructor.name == "Title") {
+                                if (n != 0) ySweep += this.pad/2
+                            }
+                            elem.render(this.x + (this.width - elem.width)/2, this.y + ySweep);
+                            break;
+                        case "trailing":
+                            if (elem.constructor.name == "Title") {
+                                if (n != 0) ySweep += this.pad/2
+                                elem.render(this.x + this.width - elem.width - this.pad, this.y + ySweep);
+                            }
+                            else{
+                                elem.render(this.x + this.width - elem.width - 1.5*this.pad, this.y + ySweep);
+                            }
+                            break;
+                    }
+
+                    if (elem.constructor.name == "Label") {
+                        ySweep += elem.height + this.pad/4;
+                    }
+                    else {
+                        ySweep += elem.height + this.pad/2;
+                    }
+                }
             }
         }
     }
@@ -432,20 +469,26 @@ class Panel {
     }
 
     onKeyPressed() {
-        for (let n = 0; n < this.contents.length; n++) {
-            if (this.contents[n].typeable) this.contents[n].onKeyPressed()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            for (let n = 0; n < this.contents.length; n++) {
+                if (this.contents[n].typeable) this.contents[n].onKeyPressed()
+            }
         }
     }
 
     onMousePressed() {
-        for (let n = 0; n < this.contents.length; n++) {
-            if (this.contents[n].clickable) this.contents[n].onMousePressed()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            for (let n = 0; n < this.contents.length; n++) {
+                if (this.contents[n].clickable) this.contents[n].onMousePressed()
+            }
         }
     }
 
     onMouseReleased() {
-        for (let n = 0; n < this.contents.length; n++) {
-            if (this.contents[n].clickable) this.contents[n].onMouseReleased()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            for (let n = 0; n < this.contents.length; n++) {
+                if (this.contents[n].clickable) this.contents[n].onMouseReleased()
+            }
         }
     }
 
@@ -456,6 +499,15 @@ class Panel {
 
     align(alignment) {
         this.alignment = alignment
+    }
+
+    hidden(target) {
+        this.hiddenBinding = target;
+        return this;
+    }
+    phantom(target) {
+        this.phantomBinding = target;
+        return this;
     }
 
     background(colour) {
@@ -484,12 +536,12 @@ class Panel {
         }
         return this;
     }
-}
-
-class Popup {
+}class Popup {
     constructor(side="right") {
         this.clickable = true;
         this.typeable = true;
+        this.hiddenBinding = "";
+        this.phantomBinding = "";
 
         this.side = side; // left, right, top, bottom
         switch (this.side) {
@@ -521,54 +573,65 @@ class Popup {
         this.x = x;
         this.y = y;
 
-        if (this.contents) {
-            if (this.side == "left" || this.side == "right") {
-                // Left or right
-                if (this.side == "left") {
-                    // Left
-                    this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2)
-                    push();
-                    fill(this.contents.backgroundVar);
-                    stroke(this.contents.borderVar);
-                    strokeWeight(this.contents.borderWeightVar);
-                    triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x - 1, this.y + this.offsetVar.y + this.contentOffsetVar.y-this.beakWidthVar/2, this.x + this.offsetVar.x + this.contentOffsetVar.x - 1, this.y + this.offsetVar.y + this.contentOffsetVar.y+this.beakWidthVar/2);
-                    pop();
+        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+            if (this.contents) {
+                if (this.side == "left" || this.side == "right") {
+                    // Left or right
+                    if (this.side == "left") {
+                        // Left
+                        this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2)
+                        push();
+                        fill(this.contents.backgroundVar);
+                        stroke(this.contents.borderVar);
+                        strokeWeight(this.contents.borderWeightVar);
+                        triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x - 1, this.y + this.offsetVar.y + this.contentOffsetVar.y-this.beakWidthVar/2, this.x + this.offsetVar.x + this.contentOffsetVar.x - 1, this.y + this.offsetVar.y + this.contentOffsetVar.y+this.beakWidthVar/2);
+                        pop();
+                    }
+                    else {
+                        // Right
+                        this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2)
+                        push();
+                        fill(this.contents.backgroundVar);
+                        stroke(this.contents.borderVar);
+                        strokeWeight(this.contents.borderWeightVar);
+                        triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x + 1, this.y + this.offsetVar.y + this.contentOffsetVar.y-this.beakWidthVar/2, this.x + this.offsetVar.x + this.contentOffsetVar.x + 1, this.y + this.offsetVar.y + this.contentOffsetVar.y+this.beakWidthVar/2);
+                        pop();
+                    }
                 }
                 else {
-                    // Right
-                    this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2)
-                    push();
-                    fill(this.contents.backgroundVar);
-                    stroke(this.contents.borderVar);
-                    strokeWeight(this.contents.borderWeightVar);
-                    triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x + 1, this.y + this.offsetVar.y + this.contentOffsetVar.y-this.beakWidthVar/2, this.x + this.offsetVar.x + this.contentOffsetVar.x + 1, this.y + this.offsetVar.y + this.contentOffsetVar.y+this.beakWidthVar/2);
-                    pop();
-                }
-            }
-            else {
-                // Top or bottom
-                if (this.side == "top") {
-                    // Top
-                    this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height)
-                    push();
-                    fill(this.contents.backgroundVar);
-                    stroke(this.contents.borderVar);
-                    strokeWeight(this.contents.borderWeightVar);
-                    triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x-this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - 1, this.x + this.offsetVar.x + this.contentOffsetVar.x+this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - 1);
-                    pop();
-                }
-                else {
-                    // Bottom
-                    this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2, this.y + this.offsetVar.y + this.contentOffsetVar.y)
-                    push();
-                    fill(this.contents.backgroundVar);
-                    stroke(this.contents.borderVar);
-                    strokeWeight(this.contents.borderWeightVar);
-                    triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x-this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y + 1, this.x + this.offsetVar.x + this.contentOffsetVar.x+this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y + 1);
-                    pop();
+                    // Top or bottom
+                    if (this.side == "top") {
+                        // Top
+                        this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height)
+                        push();
+                        fill(this.contents.backgroundVar);
+                        stroke(this.contents.borderVar);
+                        strokeWeight(this.contents.borderWeightVar);
+                        triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x-this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - 1, this.x + this.offsetVar.x + this.contentOffsetVar.x+this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - 1);
+                        pop();
+                    }
+                    else {
+                        // Bottom
+                        this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2, this.y + this.offsetVar.y + this.contentOffsetVar.y)
+                        push();
+                        fill(this.contents.backgroundVar);
+                        stroke(this.contents.borderVar);
+                        strokeWeight(this.contents.borderWeightVar);
+                        triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x-this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y + 1, this.x + this.offsetVar.x + this.contentOffsetVar.x+this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y + 1);
+                        pop();
+                    }
                 }
             }
         }
+    }
+
+    hidden(target) {
+        this.hiddenBinding = target;
+        return this;
+    }
+    phantom(target) {
+        this.phantomBinding = target;
+        return this;
     }
 
     contains(elem) {
@@ -613,25 +676,29 @@ class Popup {
     }
 
     onKeyPressed() {
-        if (this.contents.typeable) {
-            this.contents.onKeyPressed()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            if (this.contents.typeable) {
+                this.contents.onKeyPressed()
+            }
         }
     }
 
     onMousePressed() {
-        if (this.contents.clickable) {
-            this.contents.onMousePressed();
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            if (this.contents.clickable) {
+                this.contents.onMousePressed();
+            }
         }
     }
 
     onMouseReleased() {
-        if (this.contents.clickable) {
-            this.contents.onMouseReleased();
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            if (this.contents.clickable) {
+                this.contents.onMouseReleased();
+            }
         }
     }
-}
-
-class Stack {
+}class Stack {
     constructor() {
         this.width = 0;
         this.height = 0;
@@ -641,6 +708,8 @@ class Stack {
         this.clickable = true;
         this.typeable = true;
         this.alignment = "leading";
+        this.hiddenBinding = "";
+        this.phantomBinding = "";
 
         this.backgroundVar = Color.transparent;
         this.borderVar = Color.transparent;
@@ -665,6 +734,15 @@ class Stack {
         else {
             console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
         }
+        return this;
+    }
+
+    hidden(target) {
+        this.hiddenBinding = target;
+        return this;
+    }
+    phantom(target) {
+        this.phantomBinding = target;
         return this;
     }
 
@@ -696,20 +774,26 @@ class Stack {
     }
 
     onKeyPressed() {
-        for (let n = 0; n < this.contents.length; n++) {
-            if (this.contents[n].typeable) this.contents[n].onKeyPressed()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            for (let n = 0; n < this.contents.length; n++) {
+                if (this.contents[n].typeable) this.contents[n].onKeyPressed()
+            }
         }
     }
 
     onMousePressed() {
-        for (let n = 0; n < this.contents.length; n++) {
-            if (this.contents[n].clickable) this.contents[n].onMousePressed()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            for (let n = 0; n < this.contents.length; n++) {
+                if (this.contents[n].clickable) this.contents[n].onMousePressed()
+            }
         }
     }
 
     onMouseReleased() {
-        for (let n = 0; n < this.contents.length; n++) {
-            if (this.contents[n].clickable) this.contents[n].onMouseReleased()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            for (let n = 0; n < this.contents.length; n++) {
+                if (this.contents[n].clickable) this.contents[n].onMouseReleased()
+            }
         }
     }
 }
@@ -722,11 +806,16 @@ class VStack extends Stack {
     calcDimensions() {
         this.width = 0;
         this.height = 0;
+        let i = 0;
         for (let n = 0; n < this.contents.length; n++) {
-            this.width = Math.max(this.width, this.contents[n].width);
-            this.height += this.contents[n].height + this.spacingVar;
+            let elem = this.contents[n]
+            if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+                i++;
+                this.width = Math.max(this.width, elem.width);
+                this.height += elem.height + this.spacingVar;
+            }
         }
-        if (this.contents.length > 0) {
+        if (i > 0) {
             this.height -= this.spacingVar;
         }
     }
@@ -734,28 +823,33 @@ class VStack extends Stack {
     render(x, y) {
         this.x = x;
         this.y = y;
-        push()
         this.calcDimensions()
-        fill(this.backgroundVar)
-        stroke(this.borderVar)
-        strokeWeight(this.borderWeightVar)
-        rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-        pop()
-        let ySweep = 0;
-        for (let n = 0; n < this.contents.length; n++) {
-            let elem = this.contents[n]
-            switch (elem.alignment) {
-                case "leading":
-                    elem.render(this.x, this.y + ySweep);
-                    break;
-                case "center":
-                    elem.render(this.x + (this.width - this.contents[n].width)/2, this.y + ySweep);
-                    break;
-                case "trailing":
-                    elem.render(this.x + this.width - this.contents[n].width, this.y + ySweep);
-                    break;
+
+        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+            push()
+            fill(this.backgroundVar)
+            stroke(this.borderVar)
+            strokeWeight(this.borderWeightVar)
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+            pop()
+            let ySweep = 0;
+            for (let n = 0; n < this.contents.length; n++) {
+                let elem = this.contents[n]
+                if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+                    switch (elem.alignment) {
+                        case "leading":
+                            elem.render(this.x, this.y + ySweep);
+                            break;
+                        case "center":
+                            elem.render(this.x + (this.width - this.contents[n].width)/2, this.y + ySweep);
+                            break;
+                        case "trailing":
+                            elem.render(this.x + this.width - this.contents[n].width, this.y + ySweep);
+                            break;
+                    }
+                    ySweep += elem.height + this.spacingVar;
+                }
             }
-            ySweep += elem.height + this.spacingVar;
         }
     }
 }
@@ -768,11 +862,16 @@ class HStack extends Stack {
     calcDimensions() {
         this.width = 0;
         this.height = 0;
+        let i = 0;
         for (let n = 0; n < this.contents.length; n++) {
-            this.height = Math.max(this.height, this.contents[n].height);
-            this.width += this.contents[n].width + this.spacingVar;
+            let elem = this.contents[n];
+            if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+                i++;
+                this.height = Math.max(this.height, elem.height);
+                this.width += elem.width + this.spacingVar;
+            }
         }
-        if (this.contents.length > 0) {
+        if (i > 0) {
             this.width -= this.spacingVar;
         }
     }
@@ -780,33 +879,36 @@ class HStack extends Stack {
     render(x, y) {
         this.x = x;
         this.y = y;
-        push()
         this.calcDimensions()
-        fill(this.backgroundVar)
-        stroke(this.borderVar)
-        strokeWeight(this.borderWeightVar)
-        rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-        pop()
-        let xSweep = 0;
-        for (let n = 0; n < this.contents.length; n++) {
-            let elem = this.contents[n]
-            switch (elem.alignment) {
-                case "leading":
-                    this.contents[n].render(this.x + xSweep, this.y );
-                    break;
-                case "center":
-                    this.contents[n].render(this.x + xSweep, (2*this.y + this.height - this.contents[n].height)/2);
-                    break;
-                case "trailing":
-                    this.contents[n].render(this.x + xSweep, this.y + this.height - this.contents[n].height);
-                    break;
+
+        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+            push()
+            fill(this.backgroundVar)
+            stroke(this.borderVar)
+            strokeWeight(this.borderWeightVar)
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+            pop()
+            let xSweep = 0;
+            for (let n = 0; n < this.contents.length; n++) {
+                let elem = this.contents[n]
+                if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+                    switch (elem.alignment) {
+                        case "leading":
+                            this.contents[n].render(this.x + xSweep, this.y );
+                            break;
+                        case "center":
+                            this.contents[n].render(this.x + xSweep, (2*this.y + this.height - this.contents[n].height)/2);
+                            break;
+                        case "trailing":
+                            this.contents[n].render(this.x + xSweep, this.y + this.height - this.contents[n].height);
+                            break;
+                    }
+                    xSweep += this.contents[n].width + this.spacingVar;
+                }
             }
-            xSweep += this.contents[n].width + this.spacingVar;
         }
     }
-}
-
-class Text {
+}class Text {
     constructor(text) {
         this.x;
         this.y;
@@ -819,6 +921,8 @@ class Text {
         this.typeable = false;
         this.clickable = false;
         this.alignment = "leading";
+        this.hiddenBinding = "";
+        this.phantomBinding = "";
 
         this.binding = "";
 
@@ -849,12 +953,20 @@ class Text {
         return this;
     }
 
+    hidden(target) {
+        this.hiddenBinding = target;
+        return this;
+    }
+    phantom(target) {
+        this.phantomBinding = target;
+        return this;
+    }
+
     render(x, y) {
         push();
         this.x = x;
         this.y = y;
 
-        
         if (this.binding != "") this.t = `${eval(this.binding)}`
         textSize(this.tSize)
         if (this.emphasisVar) textStyle(this.emphasisVar)
@@ -868,17 +980,19 @@ class Text {
         this.width = tWidth + this.tSize*this.pFactor*2
         textAlign(LEFT, TOP)
         this.height = this.tSize*(lines.length + this.pFactor*2)
-        // this.height = this.tSize/(1-this.pFactor)
-        fill(this.backgroundVar)
-        stroke(this.borderVar)
-        strokeWeight(this.borderWeightVar)
-        rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+        
+        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+            fill(this.backgroundVar)
+            stroke(this.borderVar)
+            strokeWeight(this.borderWeightVar)
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
 
-        fill(this.textColourVar)
-        stroke(this.textBorderVar)
-        strokeWeight(this.textBorderWeightVar)
-        for (let n = 0; n < lines.length; n++) {
-            text(lines[n], this.x+this.tSize*this.pFactor, this.y + this.tSize*(this.pFactor+n))
+            fill(this.textColourVar)
+            stroke(this.textBorderVar)
+            strokeWeight(this.textBorderWeightVar)
+            for (let n = 0; n < lines.length; n++) {
+                text(lines[n], this.x+this.tSize*this.pFactor, this.y + this.tSize*(this.pFactor+n))
+            }
         }
         pop();
     }
@@ -967,9 +1081,7 @@ class Label extends Text {
         this.emphasis("bold")
         this.textColour(Color.secondary)
     }
-}
-
-class TextInput extends Text {
+}class TextInput extends Text {
     constructor(defaultText="", doMultiLine=false) {
         super(defaultText)
         this.editing = false;
@@ -1008,16 +1120,7 @@ class TextInput extends Text {
             }
         }
         
-        if (this.mouseOver()) {
-            cursor("text")
-        }
-
         push()
-
-        fill(this.backgroundVar)
-        stroke(this.borderVar)
-        strokeWeight(this.borderWeightVar)
-        rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
         
         textSize(this.tSize)
         if (this.emphasisVar) textStyle(this.emphasisVar)
@@ -1034,10 +1137,7 @@ class TextInput extends Text {
             stroke(this.textBorderVar)
         }
         strokeWeight(this.textBorderWeightVar)
-
-        if (this.emphasisVar) textStyle(this.emphasisVar)
-        if (this.fontVar) textFont(this.fontVar)
-
+        
         let longestLineIndex = 0;
         for (let n = 1; n < lines.length; n++) {
             if (textWidth(lines[n]) > textWidth(lines[longestLineIndex])) longestLineIndex = n;
@@ -1046,139 +1146,156 @@ class TextInput extends Text {
         this.width = tWidth + this.tSize*this.pFactor*2
         textAlign(LEFT, TOP)
         this.height = this.tSize*(lines.length + this.pFactor*2)
-        for (let n = 0; n < lines.length; n++) {
-            text(lines[n], this.x+this.tSize*this.pFactor, this.y + this.tSize*(this.pFactor+n))
-        }
+        
+        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
 
-        if (this.editing) {
-            const now = new Date()
-            if (now - this.lastToggledCursor > 530) {
-                this.showingCursor = !this.showingCursor;
-                this.lastToggledCursor = now;
+            if (this.mouseOver()) {
+                cursor("text")
             }
-            if (this.showingCursor) {
-                let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
-                let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
-                let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
-                let lineY1 =  this.y + this.tSize*(this.pFactor + lineNumber);
-                let lineY2 = this.y + this.tSize*(this.pFactor + lineNumber+1);
-                stroke(this.cursorColourVar)
-                strokeWeight(this.cursorWeightVar)
-                line(lineX, lineY1, lineX, lineY2)
-            }
-        }
 
-        pop()
+            push()
+            fill(this.backgroundVar)
+            stroke(this.borderVar)
+            strokeWeight(this.borderWeightVar)
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+            pop()
+
+            for (let n = 0; n < lines.length; n++) {
+                text(lines[n], this.x+this.tSize*this.pFactor, this.y + this.tSize*(this.pFactor+n))
+            }
+
+            if (this.editing) {
+                const now = new Date()
+                if (now - this.lastToggledCursor > 530) {
+                    this.showingCursor = !this.showingCursor;
+                    this.lastToggledCursor = now;
+                }
+                if (this.showingCursor) {
+                    let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
+                    let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
+                    let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
+                    let lineY1 =  this.y + this.tSize*(this.pFactor + lineNumber);
+                    let lineY2 = this.y + this.tSize*(this.pFactor + lineNumber+1);
+                    stroke(this.cursorColourVar)
+                    strokeWeight(this.cursorWeightVar)
+                    line(lineX, lineY1, lineX, lineY2)
+                }
+            }
+
+            pop()
+        }
     }
 
     onKeyPressed() {
-        if (this.editing) {
-            switch (key) {
-                case "ArrowLeft":
-                    if (this.cursorAfter.length > 0) {
-                        this.cursorAfter = this.cursorAfter.slice(0, -1);
-                        this.showingCursor = true;
-                        this.lastToggledCursor = new Date();
-                    }
-                    break;
-                case "ArrowRight":
-                    if (this.cursorAfter.length < this.t.length) {
-                        this.cursorAfter = this.t.slice(0, this.cursorAfter.length+1);
-                        this.showingCursor = true;
-                        this.lastToggledCursor = new Date();
-                    }
-                    break;
-                case "ArrowUp":
-                    {
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            if (this.editing) {
+                switch (key) {
+                    case "ArrowLeft":
+                        if (this.cursorAfter.length > 0) {
+                            this.cursorAfter = this.cursorAfter.slice(0, -1);
+                            this.showingCursor = true;
+                            this.lastToggledCursor = new Date();
+                        }
+                        break;
+                    case "ArrowRight":
+                        if (this.cursorAfter.length < this.t.length) {
+                            this.cursorAfter = this.t.slice(0, this.cursorAfter.length+1);
+                            this.showingCursor = true;
+                            this.lastToggledCursor = new Date();
+                        }
+                        break;
+                    case "ArrowUp":
+                        {
+                            push()
+                            textSize(this.tSize)
+                            if (this.emphasisVar) textStyle(this.emphasisVar)
+                            if (this.fontVar) textFont(this.fontVar)
+                            let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
+                            if (lineNumber > 0) {
+                                let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
+                                let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
+                                let lineY =  this.y + this.tSize*(this.pFactor + lineNumber+0.5);
+                                this.cursorAfter = this.getClosestCursorAfter(lineX, lineY-this.tSize)
+                                this.showingCursor = true;
+                                this.lastToggledCursor = new Date();
+                            }
+                            pop()
+                        }
+                        break;
+                    case "ArrowDown":
+                        {
+                            push()
+                            textSize(this.tSize)
+                            if (this.emphasisVar) textStyle(this.emphasisVar)
+                            if (this.fontVar) textFont(this.fontVar)
+                            let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
+                            if (lineNumber < (this.t.match(/\n/g) || []).length) {
+                                let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
+                                let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
+                                let lineY =  this.y + this.tSize*(this.pFactor + lineNumber+0.5);
+                                this.cursorAfter = this.getClosestCursorAfter(lineX, lineY+this.tSize)
+                                this.showingCursor = true;
+                                this.lastToggledCursor = new Date();
+                            }
+                            pop()
+                        }
+                        break;
+                    case "Backspace":
                         push()
                         textSize(this.tSize)
                         if (this.emphasisVar) textStyle(this.emphasisVar)
                         if (this.fontVar) textFont(this.fontVar)
-                        let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
-                        if (lineNumber > 0) {
-                            let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
-                            let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
-                            let lineY =  this.y + this.tSize*(this.pFactor + lineNumber+0.5);
-                            this.cursorAfter = this.getClosestCursorAfter(lineX, lineY-this.tSize)
-                            this.showingCursor = true;
-                            this.lastToggledCursor = new Date();
-                        }
-                        pop()
-                    }
-                    break;
-                case "ArrowDown":
-                    {
-                        push()
-                        textSize(this.tSize)
-                        if (this.emphasisVar) textStyle(this.emphasisVar)
-                        if (this.fontVar) textFont(this.fontVar)
-                        let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
-                        if (lineNumber < (this.t.match(/\n/g) || []).length) {
-                            let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
-                            let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
-                            let lineY =  this.y + this.tSize*(this.pFactor + lineNumber+0.5);
-                            this.cursorAfter = this.getClosestCursorAfter(lineX, lineY+this.tSize)
-                            this.showingCursor = true;
-                            this.lastToggledCursor = new Date();
-                        }
-                        pop()
-                    }
-                    break;
-                case "Backspace":
-                    push()
-                    textSize(this.tSize)
-                    if (this.emphasisVar) textStyle(this.emphasisVar)
-                    if (this.fontVar) textFont(this.fontVar)
-                    if (this.cursorAfter != "") {
-                        let lines = this.t.split("\n")
-                        let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
-                        let cursorAfterArray = this.cursorAfter.split("\n");
-                        let cursorAfterOnThisLine = cursorAfterArray[lineNumber]
-                        if (cursorAfterOnThisLine == "" && textWidth(lines[lineNumber])+textWidth(lines[lineNumber-1]) > this.maxWidthVar) break;
-                        this.t = this.t.slice(0, this.cursorAfter.length-1) + this.t.slice(this.cursorAfter.length);
-                        this.cursorAfter = this.cursorAfter.slice(0, -1);
-                        this.showingCursor = true;
-                        this.lastToggledCursor = new Date();
-                        this.edited = true;
-                    }
-                    pop()
-                    break;
-                case "Enter":
-                    if (this.doMultiLine && keyIsDown(SHIFT)) {
-                        if (this.height + this.tSize <= this.maxHeightVar) {
-                            this.t = this.t.slice(0, this.cursorAfter.length) + "\n" + this.t.slice(this.cursorAfter.length)
-                            this.cursorAfter += "\n"
-                            this.showingCursor = true;
-                            this.lastToggledCursor = new Date();
-                            this.edited = true;
-                        }
-                    }
-                    else {
-                        this.editing = false;
-                        this.edited = false;
-                        if (this.binding != "") {
-                            eval(`${this.binding} = this.t`)
-                        }
-                    }
-                    break;
-                default:
-                    if ((keyCode == 32) || (48 <= keyCode && keyCode <= 90) || (96 <= keyCode && keyCode <= 111) || (186 <= keyCode && keyCode <= 222)) {
-                        let lines = this.t.split("\n")
-                        let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
-                        push()
-                        textSize(this.tSize)
-                        if (this.emphasisVar) textStyle(this.emphasisVar)
-                        if (this.fontVar) textFont(this.fontVar)
-                        if (textWidth(lines[lineNumber])+textWidth(key) <= this.maxWidthVar) {
-                            this.t = this.t.slice(0, this.cursorAfter.length) + key + this.t.slice(this.cursorAfter.length)
-                            this.cursorAfter += key;
+                        if (this.cursorAfter != "") {
+                            let lines = this.t.split("\n")
+                            let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
+                            let cursorAfterArray = this.cursorAfter.split("\n");
+                            let cursorAfterOnThisLine = cursorAfterArray[lineNumber]
+                            if (cursorAfterOnThisLine == "" && textWidth(lines[lineNumber])+textWidth(lines[lineNumber-1]) > this.maxWidthVar) break;
+                            this.t = this.t.slice(0, this.cursorAfter.length-1) + this.t.slice(this.cursorAfter.length);
+                            this.cursorAfter = this.cursorAfter.slice(0, -1);
                             this.showingCursor = true;
                             this.lastToggledCursor = new Date();
                             this.edited = true;
                         }
                         pop()
-                    }
-                    break;
+                        break;
+                    case "Enter":
+                        if (this.doMultiLine && keyIsDown(SHIFT)) {
+                            if (this.height + this.tSize <= this.maxHeightVar) {
+                                this.t = this.t.slice(0, this.cursorAfter.length) + "\n" + this.t.slice(this.cursorAfter.length)
+                                this.cursorAfter += "\n"
+                                this.showingCursor = true;
+                                this.lastToggledCursor = new Date();
+                                this.edited = true;
+                            }
+                        }
+                        else {
+                            this.editing = false;
+                            this.edited = false;
+                            if (this.binding != "") {
+                                eval(`${this.binding} = this.t`)
+                            }
+                        }
+                        break;
+                    default:
+                        if ((keyCode == 32) || (48 <= keyCode && keyCode <= 90) || (96 <= keyCode && keyCode <= 111) || (186 <= keyCode && keyCode <= 222)) {
+                            let lines = this.t.split("\n")
+                            let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
+                            push()
+                            textSize(this.tSize)
+                            if (this.emphasisVar) textStyle(this.emphasisVar)
+                            if (this.fontVar) textFont(this.fontVar)
+                            if (textWidth(lines[lineNumber])+textWidth(key) <= this.maxWidthVar) {
+                                this.t = this.t.slice(0, this.cursorAfter.length) + key + this.t.slice(this.cursorAfter.length)
+                                this.cursorAfter += key;
+                                this.showingCursor = true;
+                                this.lastToggledCursor = new Date();
+                                this.edited = true;
+                            }
+                            pop()
+                        }
+                        break;
+                }
             }
         }
     }
@@ -1226,19 +1343,23 @@ class TextInput extends Text {
     }
 
     onMousePressed() {
-        if (this.mouseOver()) {
-            this.editing = true;
-            this.cursorAfter = this.getClosestCursorAfter(mouseX, mouseY)
-            this.showingCursor = true;
-            this.lastToggledCursor = new Date();
-        }
-        else {
-            this.editing = false;
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            if (this.mouseOver()) {
+                this.editing = true;
+                this.cursorAfter = this.getClosestCursorAfter(mouseX, mouseY)
+                this.showingCursor = true;
+                this.lastToggledCursor = new Date();
+            }
+            else {
+                this.editing = false;
+            }
         }
     }
 
     onMouseReleased() {
-        
+        // if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+
+        // }
     }
 
     mouseOver() {
@@ -1270,9 +1391,7 @@ class TextInput extends Text {
         this.cursorWeightVar = value;
         return this;
     }
-}
-
-class Toggle {
+}class Toggle {
     constructor(width, height) {
         this.x;
         this.y;
@@ -1282,6 +1401,8 @@ class Toggle {
         this.clickable = true;
         this.typeable = true;
         this.alignment = "leading";
+        this.hiddenBinding = "";
+        this.phantomBinding = "";
 
         this.displayState = "default off";
         this.on = false;
@@ -1334,31 +1455,45 @@ class Toggle {
         return this;
     }
 
+    hidden(target) {
+        this.hiddenBinding = target;
+        return this;
+    }
+    phantom(target) {
+        this.phantomBinding = target;
+        return this;
+    }
+
     onKeyPressed() {
-        if (this.popupVar && this.on) {
-            if (this.popupVar.typeable) {
-                this.popupVar.onKeyPressed()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            if (this.popupVar && this.on) {
+                if (this.popupVar.typeable) {
+                    this.popupVar.onKeyPressed()
+                }
             }
         }
     }
 
     onMousePressed() {
-        // nothing - see mouse released
-        if (this.popupVar && this.on) {
-            if (this.popupVar.clickable) {
-                this.popupVar.onMousePressed()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            if (this.popupVar && this.on) {
+                if (this.popupVar.clickable) {
+                    this.popupVar.onMousePressed()
+                }
             }
         }
     }
 
     onMouseReleased() {
-        if (this.mouseOver()) {
-            this.toggle()
-            if (this.binding != "") eval(`${this.binding} = this.on`)
-        }
-        if (this.popupVar && this.on) {
-            if (this.popupVar.clickable) {
-                this.popupVar.onMouseReleased()
+        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+            if (this.mouseOver()) {
+                this.toggle()
+                if (this.binding != "") eval(`${this.binding} = this.on`)
+            }
+            if (this.popupVar && this.on) {
+                if (this.popupVar.clickable) {
+                    this.popupVar.onMouseReleased()
+                }
             }
         }
     }
@@ -1527,67 +1662,69 @@ class SlideToggle extends Toggle {
         this.x = x;
         this.y = y;
 
-        if (this.mouseOver()) {
-            cursor("pointer")
-            this.displayState = `hover ${this.on ? "on": "off"}`
-            if (mouseIsPressed) {
-                this.displayState = `pressed ${this.on ? "on": "off"}`
+        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+            if (this.mouseOver()) {
+                cursor("pointer")
+                this.displayState = `hover ${this.on ? "on": "off"}`
+                if (mouseIsPressed) {
+                    this.displayState = `pressed ${this.on ? "on": "off"}`
+                }
             }
-        }
-        else {
-            this.displayState = this.on ? "default on" : "default off"
-        }
-        
-        if (this.binding != "") {
-            if (this.on != eval(this.binding)) {
-                // binding changed so update this.displayState and this.on
-                this.set(eval(this.binding))
+            else {
+                this.displayState = this.on ? "default on" : "default off"
             }
-        }
-
-        if (this.radioBinding != "") {
-            if (eval(this.radioBinding) != this.radioName && eval(this.radioBinding) != "") {
-                if (this.on) this.set(false)
+            
+            if (this.binding != "") {
+                if (this.on != eval(this.binding)) {
+                    // binding changed so update this.displayState and this.on
+                    this.set(eval(this.binding))
+                }
             }
-        }
 
-        push()
-        // Background
-        fill(this.backgroundVar[this.displayState])
-        stroke(this.borderVar[this.displayState])
-        strokeWeight(this.borderWeightVar[this.displayState])
-        rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
+            if (this.radioBinding != "") {
+                if (eval(this.radioBinding) != this.radioName && eval(this.radioBinding) != "") {
+                    if (this.on) this.set(false)
+                }
+            }
 
-        // Knob
-        fill(this.knobColourVar[this.displayState])
-        stroke(this.knobBorderVar[this.displayState])
-        strokeWeight(this.knobBorderWeightVar[this.displayState])
-        rectMode(CENTER)
-        if (this.displayState.split(" ")[1] == "on") {
-            rect(this.x + this.width - this.height/2, this.y + this.height/2, this.height-4, this.height-4, this.knobCornerRadiusVar[this.displayState][0], this.knobCornerRadiusVar[this.displayState][1], this.knobCornerRadiusVar[this.displayState][2], this.knobCornerRadiusVar[this.displayState][3])
-        }
-        else {
-            rect(this.x + this.height/2, this.y + this.height/2, this.height-4, this.height-4, this.knobCornerRadiusVar[this.displayState][0], this.knobCornerRadiusVar[this.displayState][1], this.knobCornerRadiusVar[this.displayState][2], this.knobCornerRadiusVar[this.displayState][3])
-        }
-        pop()
+            push()
+            // Background
+            fill(this.backgroundVar[this.displayState])
+            stroke(this.borderVar[this.displayState])
+            strokeWeight(this.borderWeightVar[this.displayState])
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
 
-        if (this.popupVar && this.on) {
-            switch (this.popupVar.side) {
-                case "left":
-                    this.popupVar.render(this.x, this.y + this.height/2)
-                    break;
-                case "right":
-                    this.popupVar.render(this.x + this.width, this.y + this.height/2)
-                    break;
-                case "top":
-                    this.popupVar.render(this.x + this.width/2, this.y)
-                    break;
-                    case "bottom":
-                    this.popupVar.render(this.x + this.width/2, this.y + this.height)
-                    break;
-                default:
-                    console.error(`Popup has invalid side: ${this.popupVar.side}`)
-                    break;
+            // Knob
+            fill(this.knobColourVar[this.displayState])
+            stroke(this.knobBorderVar[this.displayState])
+            strokeWeight(this.knobBorderWeightVar[this.displayState])
+            rectMode(CENTER)
+            if (this.displayState.split(" ")[1] == "on") {
+                rect(this.x + this.width - this.height/2, this.y + this.height/2, this.height-4, this.height-4, this.knobCornerRadiusVar[this.displayState][0], this.knobCornerRadiusVar[this.displayState][1], this.knobCornerRadiusVar[this.displayState][2], this.knobCornerRadiusVar[this.displayState][3])
+            }
+            else {
+                rect(this.x + this.height/2, this.y + this.height/2, this.height-4, this.height-4, this.knobCornerRadiusVar[this.displayState][0], this.knobCornerRadiusVar[this.displayState][1], this.knobCornerRadiusVar[this.displayState][2], this.knobCornerRadiusVar[this.displayState][3])
+            }
+            pop()
+
+            if (this.popupVar && this.on) {
+                switch (this.popupVar.side) {
+                    case "left":
+                        this.popupVar.render(this.x, this.y + this.height/2)
+                        break;
+                    case "right":
+                        this.popupVar.render(this.x + this.width, this.y + this.height/2)
+                        break;
+                    case "top":
+                        this.popupVar.render(this.x + this.width/2, this.y)
+                        break;
+                        case "bottom":
+                        this.popupVar.render(this.x + this.width/2, this.y + this.height)
+                        break;
+                    default:
+                        console.error(`Popup has invalid side: ${this.popupVar.side}`)
+                        break;
+                }
             }
         }
     }
@@ -1712,65 +1849,69 @@ class CheckToggle extends Toggle {
         this.x = x;
         this.y = y;
 
-        if (this.mouseOver()) {
-            cursor("pointer")
-            this.displayState = `hover ${this.on ? "on": "off"}`
-            if (mouseIsPressed) {
-                this.displayState = `pressed ${this.on ? "on": "off"}`
+        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+            if (this.mouseOver()) {
+                cursor("pointer")
+                this.displayState = `hover ${this.on ? "on": "off"}`
+                if (mouseIsPressed) {
+                    this.displayState = `pressed ${this.on ? "on": "off"}`
+                }
             }
-        }
-        else {
-            this.displayState = this.on ? "default on" : "default off"
-        }
-
-        
-        if (this.binding != "") {
-            if (this.on != eval(this.binding)) {
-                // binding changed so update this.displayState and this.on
-                this.set(eval(this.binding))
-                console.log(this.displayState)
+            else {
+                this.displayState = this.on ? "default on" : "default off"
             }
-        }
 
-        if (this.radioBinding != "") {
-            if (eval(this.radioBinding) != this.radioName && eval(this.radioBinding) != "") {
-                if (this.on) this.set(false)
-                console.log(eval(this.radioBinding), this.radioName)
+            
+            if (this.binding != "") {
+                if (this.on != eval(this.binding)) {
+                    // binding changed so update this.displayState and this.on
+                    this.set(eval(this.binding))
+                    console.log(this.displayState)
+                }
             }
-        }
 
-        push()
-        // Background
-        fill(this.backgroundVar[this.displayState])
-        stroke(this.borderVar[this.displayState])
-        strokeWeight(this.borderWeightVar[this.displayState])
-        rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
-        
-        if (this.contents[this.displayState]) {
-            let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
-            translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
-            scale(scaleFactor)
-            this.contents[this.displayState].render(0, 0)
-        }
-        pop()
+            if (this.radioBinding != "") {
+                if (eval(this.radioBinding) != this.radioName && eval(this.radioBinding) != "") {
+                    if (this.on) this.set(false)
+                    console.log(eval(this.radioBinding), this.radioName)
+                }
+            }
 
-        if (this.popupVar && this.on) {
-            switch (this.popupVar.side) {
-                case "left":
-                    this.popupVar.render(this.x, this.y + this.height/2)
-                    break;
-                case "right":
-                    this.popupVar.render(this.x + this.width, this.y + this.height/2)
-                    break;
-                case "top":
-                    this.popupVar.render(this.x + this.width/2, this.y)
-                    break;
-                    case "bottom":
-                    this.popupVar.render(this.x + this.width/2, this.y + this.height)
-                    break;
-                default:
-                    console.error(`Popup has invalid side: ${this.popupVar.side}`)
-                    break;
+            push()
+            // Background
+            fill(this.backgroundVar[this.displayState])
+            stroke(this.borderVar[this.displayState])
+            strokeWeight(this.borderWeightVar[this.displayState])
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
+            
+            if (this.contents[this.displayState]) {
+                if (this.contents[this.displayState].phantomBinding == "" || eval(this.contents[this.displayState].phantomBinding) == false) {
+                    let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+                    translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
+                    scale(scaleFactor)
+                    this.contents[this.displayState].render(0, 0)
+                }
+            }
+            pop()
+
+            if (this.popupVar && this.on) {
+                switch (this.popupVar.side) {
+                    case "left":
+                        this.popupVar.render(this.x, this.y + this.height/2)
+                        break;
+                    case "right":
+                        this.popupVar.render(this.x + this.width, this.y + this.height/2)
+                        break;
+                    case "top":
+                        this.popupVar.render(this.x + this.width/2, this.y)
+                        break;
+                        case "bottom":
+                        this.popupVar.render(this.x + this.width/2, this.y + this.height)
+                        break;
+                    default:
+                        console.error(`Popup has invalid side: ${this.popupVar.side}`)
+                        break;
+                }
             }
         }
     }

@@ -1,6 +1,7 @@
 let heart = "heart"
 let bool = false;
 let radioman = "";
+let hideman = true;
 
 let ti = new TextInput("", true)
                 .placeholder("Input")
@@ -77,6 +78,7 @@ panel.contains([
     new Button()
         .command(() => console.log("hi"))
         .contains(airplayIcon)
+        .phantom("hideman")
     ,
 ])
 .cornerRadius(20)
