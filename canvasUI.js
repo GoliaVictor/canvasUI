@@ -1401,7 +1401,7 @@ class Label extends Text {
         return this;
     }
 }class Toggle {
-    constructor(width, height, state) {
+    constructor(width, height) {
         this.x;
         this.y;
         this.width = width;
@@ -1414,7 +1414,7 @@ class Label extends Text {
         this.phantomBinding = "";
 
         this.displayState = "default off";
-        this.on = state;
+        this.on = false;
         this.binding = "";
         this.radioName = "";
         this.radioBinding = "";
@@ -1655,8 +1655,8 @@ class Label extends Text {
 }
 
 class SlideToggle extends Toggle {
-    constructor(width=32, height=18, state=false) {
-        super(width, height, state);
+    constructor(width=32, height=18) {
+        super(width, height);
 
         this.cornerRadiusVar = {"default on": [this.height, this.height, this.height, this.height], "default off": [this.height, this.height, this.height, this.height], "hover on": [this.height, this.height, this.height, this.height], "hover off": [this.height, this.height, this.height, this.height], "pressed on": [this.height, this.height, this.height, this.height], "pressed off": [this.height, this.height, this.height, this.height]};
 
@@ -1844,8 +1844,8 @@ class SlideToggle extends Toggle {
 }
 
 class CheckToggle extends Toggle {
-    constructor(width=18, height=18, state=false) {
-        super(width, height, state);
+    constructor(width=18, height=18) {
+        super(width, height);
 
         this.cornerRadiusVar = {"default on": [4, 4, 4, 4], "default off": [4, 4, 4, 4], "hover on": [4, 4, 4, 4], "hover off": [4, 4, 4, 4], "pressed on": [4, 4, 4, 4], "pressed off": [4, 4, 4, 4]};
 
