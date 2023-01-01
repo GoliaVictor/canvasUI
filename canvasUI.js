@@ -1112,7 +1112,6 @@ class Label extends Text {
 
         // Default styling config
         this.background(Color.nearInverse)
-        this.paddingFactor(0.2)
     }
 
     render(x, y) {
