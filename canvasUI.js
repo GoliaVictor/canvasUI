@@ -343,6 +343,16 @@ class Blank {
         }
     }
 
+    align(value) {
+        if (value == "leading" || value == "center" || value == "trailing") {
+            this.alignment = value;
+        }
+        else {
+            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+        }
+        return this;
+    }
+
     hidden(target) {
         this.hiddenBinding = target;
         return this;
