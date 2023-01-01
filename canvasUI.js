@@ -1425,6 +1425,36 @@ class Label extends Text {
         this.borderWeightVar = {"default on": 1, "default off": 1, "hover on": 1, "hover off": 1, "pressed on": 1, "pressed off": 1};
     }
 
+    update() {
+        if (this.mouseOver()) {
+            cursor("pointer")
+            this.displayState = `hover ${this.on ? "on": "off"}`
+            if (mouseIsPressed) {
+                this.displayState = `pressed ${this.on ? "on": "off"}`
+            }
+        }
+        else {
+            this.displayState = this.on ? "default on" : "default off"
+        }
+        
+        if (this.binding != "") {
+            if (this.on != eval(this.binding)) {
+                // binding changed so update this.displayState and this.on
+                this.set(eval(this.binding))
+                if (!this.on && this.radioBinding != "") eval(`${this.radioBinding} = ""`)
+            }
+        }
+
+        if (this.radioBinding != "") {
+            if (eval(this.radioBinding) != this.radioName) {
+                if (this.on) this.set(false)
+            }
+            else {
+                if (!this.on) this.set(true)
+            }
+        }
+    }
+
     toggle() {
         this.set(!this.on)
     }
@@ -1444,7 +1474,7 @@ class Label extends Text {
         return this;
     }
 
-    radio(radioName, target) {
+    radio(target, radioName) {
         this.radioName = radioName
         this.radioBinding = target;
         return this;
@@ -1668,31 +1698,8 @@ class SlideToggle extends Toggle {
         this.y = y;
 
         if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
-            if (this.mouseOver()) {
-                cursor("pointer")
-                this.displayState = `hover ${this.on ? "on": "off"}`
-                if (mouseIsPressed) {
-                    this.displayState = `pressed ${this.on ? "on": "off"}`
-                }
-            }
-            else {
-                this.displayState = this.on ? "default on" : "default off"
-            }
+            this.update()
             
-            if (this.binding != "") {
-                if (this.on != eval(this.binding)) {
-                    // binding changed so update this.displayState and this.on
-                    this.set(eval(this.binding))
-                    if (!this.on && this.radioBinding != "") eval(`${this.radioBinding} = ""`)
-                }
-            }
-
-            if (this.radioBinding != "") {
-                if (eval(this.radioBinding) != this.radioName && eval(this.radioBinding) != "") {
-                    if (this.on) this.set(false)
-                }
-            }
-
             push()
             // Background
             fill(this.backgroundVar[this.displayState])
@@ -1856,31 +1863,7 @@ class CheckToggle extends Toggle {
         this.y = y;
 
         if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
-            if (this.mouseOver()) {
-                cursor("pointer")
-                this.displayState = `hover ${this.on ? "on": "off"}`
-                if (mouseIsPressed) {
-                    this.displayState = `pressed ${this.on ? "on": "off"}`
-                }
-            }
-            else {
-                this.displayState = this.on ? "default on" : "default off"
-            }
-
-            
-            if (this.binding != "") {
-                if (this.on != eval(this.binding)) {
-                    // binding changed so update this.displayState and this.on
-                    this.set(eval(this.binding))
-                    if (!this.on && this.radioBinding != "") eval(`${this.radioBinding} = ""`)
-                }
-            }
-
-            if (this.radioBinding != "") {
-                if (eval(this.radioBinding) != this.radioName && eval(this.radioBinding) != "") {
-                    if (this.on) this.set(false)
-                }
-            }
+            this.update()
 
             push()
             // Background
