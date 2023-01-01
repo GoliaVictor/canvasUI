@@ -21,8 +21,8 @@ let Color = {
     nearPrimary: [242, 242, 247],
     nearInverse: [28, 28, 29],
 
-    brighter(colour) {
-        return [colour[0]*7/6, colour[1]*7/6, colour[2]*7/6];
+    brighter(colour, times=1) {
+        return [colour[0]*((7/6)**times), colour[1]*((7/6)**times), colour[2]*((7/6)**times)];
     },
 
     darkTheme: (bool) => {
