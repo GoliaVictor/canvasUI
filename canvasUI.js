@@ -148,7 +148,7 @@ class Blank {
                 trueFunction()
             }
             else {
-                console.log(`Invalid 'when' parameter ${when} for ${variableIdentifierText}. Ensure the input is one of the following: '${whenOptions.join("', '")}'`)
+                console.error(`Invalid 'when' parameter ${when} for ${variableIdentifierText}. Ensure the input is one of the following: '${whenOptions.join("', '")}'`)
             }
         }
         else {
@@ -248,8 +248,6 @@ class Blank {
         this.alignment = "center";
         this.hiddenBinding = "";
         this.phantomBinding = "";
-
-        this.binding = ""
 
         // Get paths
         let temp = this.svg.split('<path d="')
@@ -1438,9 +1436,6 @@ class Label extends Text {
             if (value == true) {
                 eval(`${this.radioBinding} = this.radioName`)
             }
-            else {
-                eval(`${this.radioBinding} = ""`)
-            }
         }
     }
 
@@ -1498,6 +1493,7 @@ class Label extends Text {
             if (this.mouseOver()) {
                 this.toggle()
                 if (this.binding != "") eval(`${this.binding} = this.on`)
+                if (!this.on && this.radioBinding != "") eval(`${this.radioBinding} = ""`)
             }
             if (this.popupVar && this.on) {
                 if (this.popupVar.clickable) {
@@ -1540,7 +1536,7 @@ class Label extends Text {
                 onlyStateFunction()
             }
             else {
-                console.log(`Invalid 'when' parameter ${when} for ${variableIdentifierText}. Ensure the input is one of the following: '${whenOptions.join("', '")}'`)
+                console.error(`Invalid 'when' parameter ${when} for ${variableIdentifierText}. Ensure the input is one of the following: '${whenOptions.join("', '")}'`)
             }
         }
         else {
@@ -1687,6 +1683,7 @@ class SlideToggle extends Toggle {
                 if (this.on != eval(this.binding)) {
                     // binding changed so update this.displayState and this.on
                     this.set(eval(this.binding))
+                    if (!this.on && this.radioBinding != "") eval(`${this.radioBinding} = ""`)
                 }
             }
 
@@ -1875,14 +1872,13 @@ class CheckToggle extends Toggle {
                 if (this.on != eval(this.binding)) {
                     // binding changed so update this.displayState and this.on
                     this.set(eval(this.binding))
-                    console.log(this.displayState)
+                    if (!this.on && this.radioBinding != "") eval(`${this.radioBinding} = ""`)
                 }
             }
 
             if (this.radioBinding != "") {
                 if (eval(this.radioBinding) != this.radioName && eval(this.radioBinding) != "") {
                     if (this.on) this.set(false)
-                    console.log(eval(this.radioBinding), this.radioName)
                 }
             }
 
