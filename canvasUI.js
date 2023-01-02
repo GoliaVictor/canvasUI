@@ -251,7 +251,8 @@ let hotkey = {
             }
         }
     }
-}class Icon {
+}
+class Icon {
     constructor(svg) {
         this.svg = svg;
         this.graphicString = "";
