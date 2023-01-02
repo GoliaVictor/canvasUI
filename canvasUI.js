@@ -5,8 +5,8 @@ class Blank {
         this.width = width;
         this.height = height;
 
-        this.clickable = true;
-        this.typeable = true;
+        this.clickable = false;
+        this.typeable = false;
         this.alignment = "leading";
         this.phantomBinding = "";
     }

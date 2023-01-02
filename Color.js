@@ -25,7 +25,17 @@ let Color = {
         return [colour[0]*((7/6)**times), colour[1]*((7/6)**times), colour[2]*((7/6)**times)];
     },
 
-    darkTheme: (bool) => {
+    darker(colour, times=1) {
+        return [colour[0]*((6/7)**times), colour[1]*((6/7)**times), colour[2]*((6/7)**times)];
+    },
+
+    nudge(colour, times=1) {
+        if (DARKTHEME) return Color.brighter(colour, times);
+        else return Color.darker(colour, times);
+    },
+
+    darkTheme(bool) {
+        DARKTHEME = bool;
         if (bool) {
             Color.primary = Color.white
             Color.inverse = Color.black
