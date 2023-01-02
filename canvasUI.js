@@ -232,6 +232,25 @@ class Blank {
         }, "button paddingFactor")
         return this;
     }
+}let doHotkeys = true;
+
+let hotkey = {
+    dataKey: {},
+    dataKeyCode: {},
+    on(when, func) {
+        if (typeof when === "string") hotkey.dataKey[when] = func;
+        else if (Number.isInteger(when)) hotkey.dataKeyCode[when] = func;
+    },
+    onKeyPressed() {
+        if (doHotkeys) {
+            for (let code of Object.keys(hotkey.dataKeyCode)) {
+                if (keyCode == code) hotkey.dataKeyCode[code]()
+            }
+            for (let keyI of Object.keys(hotkey.dataKey)) {
+                if (key == keyI) hotkey.dataKey[keyI]()
+            }
+        }
+    }
 }class Icon {
     constructor(svg) {
         this.svg = svg;
@@ -372,9 +391,7 @@ class Blank {
         this.strokeWeightVar = value;
         return this;
     }
-}
-
-class Panel {
+}class Panel {
     constructor() {
         this.x;
         this.y;
@@ -1278,6 +1295,7 @@ class Label extends Text {
                         }
                         else {
                             this.editing = false;
+                            doHotkeys = true;
                             this.edited = false;
                             if (this.binding != "") {
                                 eval(`${this.binding} = this.t`)
@@ -1353,12 +1371,17 @@ class Label extends Text {
         if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
             if (this.mouseOver()) {
                 this.editing = true;
+                doHotkeys = false;
+                console.log(doHotkeys)
                 this.cursorAfter = this.getClosestCursorAfter(mouseX, mouseY)
                 this.showingCursor = true;
                 this.lastToggledCursor = new Date();
             }
             else {
-                this.editing = false;
+                if (this.editing) {
+                    this.editing = false;
+                    doHotKeys = true;
+                }
             }
         }
     }
