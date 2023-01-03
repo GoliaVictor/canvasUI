@@ -56,10 +56,14 @@ class Blank {
                 if (mouseIsPressed) {
                     this.displayState = `pressed`
                 }
-                doHotmouse = false;
+                doHotMouseDown = false;
+                doHotMouseUp = false;
             }
             else {
-                if (this.displayState == "hover" || this.displayState == "pressed") doHotmouse = true;
+                if (this.displayState == "hover" || this.displayState == "pressed") {
+                    doHotMouseDown = true;
+                    doHotMouseUp = true;
+                }
                 this.displayState = "default"
             }
     
@@ -235,18 +239,23 @@ class Blank {
         return this;
     }
 }let doHotkeys = true;
-let doHotmouse = true;
+let doHotMouseDown = true;
+let doHotMouseUp = true;
 
 let hotkey = {
     dataKey: {},
     dataKeyCode: {},
-    dataMouse: {},
+    dataMouseDown: {},
+    dataMouseUp: {},
     onkey(when, func) {
         if (typeof when === "string") hotkey.dataKey[when] = func;
         else if (Number.isInteger(when)) hotkey.dataKeyCode[when] = func;
     },
-    onmouse(when, func) {
-        if (typeof when === "string") hotkey.dataMouse[when] = func;
+    onmousedown(when, func) {
+        if (typeof when === "string") hotkey.dataMouseDown[when] = func;
+    },
+    onmouseup(when, func) {
+        if (typeof when === "string") hotkey.dataMouseUp[when] = func;
     },
     onKeyPressed() {
         if (doHotkeys) {
@@ -259,9 +268,16 @@ let hotkey = {
         }
     },
     onMousePressed() {
-        if (doHotmouse) {
-            for (let mouseKey of Object.keys(hotkey.dataMouse)) {
-                if (mouseButton == mouseKey) hotkey.dataMouse[mouseKey]()
+        if (doHotMouseDown) {
+            for (let mouseKey of Object.keys(hotkey.dataMouseDown)) {
+                if (mouseButton == mouseKey) hotkey.dataMouseDown[mouseKey]()
+            }
+        }
+    },
+    onMouseReleased() {
+        if (doHotMouseUp) {
+            for (let mouseKey of Object.keys(hotkey.dataMouseUp)) {
+                if (mouseButton == mouseKey) hotkey.dataMouseUp[mouseKey]()
             }
         }
     }
@@ -1278,10 +1294,14 @@ class Label extends Text {
             if (this.mouseOver()) {
                 cursor("text")
                 this.hovering = true;
-                doHotmouse = false;
+                doHotMouseDown = false;
+                doHotMouseUp = false;
             }
             else {
-                if (this.hovering) doHotmouse = true;
+                if (this.hovering) {
+                    doHotMouseDown = true;
+                    doHotMouseUp = true;
+                }
                 this.hovering = false;
             }
 
@@ -1404,7 +1424,8 @@ class Label extends Text {
                         else {
                             this.editing = false;
                             doHotkeys = true;
-                            doHotmouse = true;
+                            doHotMouseDown = true;
+                            doHotMouseUp = true;
                             this.edited = false;
                             if (this.binding != "") {
                                 eval(`${this.binding} = this.t`)
@@ -1481,7 +1502,8 @@ class Label extends Text {
             if (this.mouseOver()) {
                 this.editing = true;
                 doHotkeys = false;
-                doHotmouse = false;
+                doHotMouseDown = false;
+                doHotMouseUp = false;
                 this.cursorAfter = this.getClosestCursorAfter(mouseX, mouseY)
                 this.showingCursor = true;
                 this.lastToggledCursor = new Date();
@@ -1490,7 +1512,8 @@ class Label extends Text {
                 if (this.editing) {
                     this.editing = false;
                     doHotkeys = true;
-                    doHotmouse = true;
+                    doHotMouseDown = true;
+                    doHotMouseUp = true;
                 }
             }
         }
@@ -1565,12 +1588,16 @@ class Label extends Text {
             if (mouseIsPressed) {
                 this.displayState = `pressed ${this.on ? "on": "off"}`
             }
-            doHotmouse = false;
-            // console.log(doHotmouse, this.radioName)
+            doHotMouseDown = false;
+            doHotMouseUp = false;
+            // console.log(doHotMouseDown, this.radioName)
         }
         else {
-            if (this.displayState == "hover on" || this.displayState == "hover off" || this.displayState == "pressed on" || this.displayState == "pressed off") doHotmouse = true;
-            // console.log(doHotmouse, this.radioName)
+            if (this.displayState == "hover on" || this.displayState == "hover off" || this.displayState == "pressed on" || this.displayState == "pressed off") {
+                doHotMouseDown = true;
+                doHotMouseUp = true;
+            }
+            // console.log(doHotMouseDown, this.radioName)
             this.displayState = this.on ? "default on" : "default off"
         }
         
