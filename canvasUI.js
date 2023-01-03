@@ -276,6 +276,8 @@ class Icon {
         // Interpret dimensions
         this.width = parseFloat(this.svg.split('width="')[1].split('"')[0]);
         this.height = parseFloat(this.svg.split('height="')[1].split('"')[0]);
+        this.flipHorizontallyVar = false;
+        this.flipVerticallyVar = false;
 
         this.typeable = false;
         this.clickable = false;
@@ -283,16 +285,21 @@ class Icon {
         this.hiddenBinding = "";
         this.phantomBinding = "";
 
+        this.generateGraphicString()
+
+        this.fillColourVar = Color.transparent;
+        this.strokeColourVar = Color.primary;
+        this.strokeWeightVar = 2;
+    }
+
+    generateGraphicString() {
+        this.graphicString = "";
         // Get paths
         let temp = this.svg.split('<path d="')
         for (let n = 1; n < temp.length; n++) {
             let d = temp[n].split('"')[0];
             this.graphicString += this.interpretSVGPath(d);
         }
-
-        this.fillColourVar = Color.transparent;
-        this.strokeColourVar = Color.primary;
-        this.strokeWeightVar = 2;
     }
 
     interpretSVGPath(d) {
@@ -320,27 +327,93 @@ class Icon {
             if (unit.match(/[a-z]/i)) {
                 switch (unit) {
                     case "M":
-                        command += `endShape();beginShape();vertex(${array[i+1]},${array[i+2]});`;
+                        if (this.flipHorizontallyVar && this.flipVerticallyVar) {
+                            command += `endShape();beginShape();vertex(${this.width-array[i+1]},${this.height-array[i+2]});`;
+                        }
+                        else if (this.flipHorizontallyVar) {
+                            command += `endShape();beginShape();vertex(${this.width-array[i+1]},${array[i+2]});`;
+                        }
+                        else if (this.flipVerticallyVar) {
+                            command += `endShape();beginShape();vertex(${array[i+1]},${this.height-array[i+2]});`;
+                        }
+                        else {
+                            command += `endShape();beginShape();vertex(${array[i+1]},${array[i+2]});`;
+                        }
                         i += 2;
                         break;
                     case "L":
-                        command += `vertex(${array[i+1]},${array[i+2]});`;
+                        if (this.flipHorizontallyVar && this.flipVerticallyVar) {
+                            command += `vertex(${this.width-array[i+1]},${this.height-array[i+2]});`;
+                        }
+                        else if (this.flipHorizontallyVar) {
+                            command += `vertex(${this.width-array[i+1]},${array[i+2]});`;
+                        }
+                        else if (this.flipVerticallyVar) {
+                            command += `vertex(${array[i+1]},${this.height-array[i+2]});`;
+                        }
+                        else {
+                            command += `vertex(${array[i+1]},${array[i+2]});`;
+                        }
                         i += 2;
                         break;
                     case "H":
-                        command += `vertex(${array[i+1]},${array[i-1]});`;
+                        if (this.flipHorizontallyVar && this.flipVerticallyVar) {
+                            command += `vertex(${this.width-array[i+1]},${this.height-array[i-1]});`;
+                        }
+                        else if (this.flipHorizontallyVar) {
+                            command += `vertex(${this.width-array[i+1]},${array[i-1]});`;
+                        }
+                        else if (this.flipVerticallyVar) {
+                            command += `vertex(${array[i+1]},${this.height-array[i-1]});`;
+                        }
+                        else {
+                            command += `vertex(${array[i+1]},${array[i-1]});`;
+                        }
                         i += 1;
                         break;
                     case "V":
-                        command += `vertex(${array[i-2]},${array[i+1]});`;
+                        if (this.flipHorizontallyVar && this.flipVerticallyVar) {
+                            command += `vertex(${this.width-array[i-2]},${this.height-array[i+1]});`;
+                        }
+                        else if (this.flipHorizontallyVar) {
+                            command += `vertex(${this.width-array[i-2]},${array[i+1]});`;
+                        }
+                        else if (this.flipVerticallyVar) {
+                            command += `vertex(${array[i-2]},${this.height-array[i+1]});`;
+                        }
+                        else {
+                            command += `vertex(${array[i-2]},${array[i+1]});`;
+                        }
                         i += 1;
                         break;
                     case "C":
-                        command += `bezierVertex(${array[i+1]},${array[i+2]},${array[i+3]},${array[i+4]},${array[i+5]},${array[i+6]});`;
+                        if (this.flipHorizontallyVar && this.flipVerticallyVar) {
+                            command += `bezierVertex(${this.width-array[i+1]},${this.height-array[i+2]},${this.width-array[i+3]},${this.height-array[i+4]},${this.width-array[i+5]},${this.height-array[i+6]});`;
+                        }
+                        else if (this.flipHorizontallyVar) {
+                            command += `bezierVertex(${this.width-array[i+1]},${array[i+2]},${this.width-array[i+3]},${array[i+4]},${this.width-array[i+5]},${array[i+6]});`;
+                        }
+                        else if (this.flipVerticallyVar) {
+                            command += `bezierVertex(${array[i+1]},${this.height-array[i+2]},${array[i+3]},${this.height-array[i+4]},${array[i+5]},${this.height-array[i+6]});`;
+                        }
+                        else {
+                            command += `bezierVertex(${array[i+1]},${array[i+2]},${array[i+3]},${array[i+4]},${array[i+5]},${array[i+6]});`;
+                        }
                         i += 6;
                         break;
                     case "Q":
-                        command += `quadraticVertex(${array[i+1]},${array[i+2]},${array[i+3]},${array[i+4]});`;
+                        if (this.flipHorizontallyVar && this.flipVerticallyVar) {
+                            command += `quadraticVertex(${this.width-array[i+1]},${this.height-array[i+2]},${this.width-array[i+3]},${this.height-array[i+4]});`;
+                        }
+                        else if (this.flipHorizontallyVar) {
+                            command += `quadraticVertex(${this.width-array[i+1]},${array[i+2]},${this.width-array[i+3]},${array[i+4]});`;
+                        }
+                        else if (this.flipVerticallyVar) {
+                            command += `quadraticVertex(${array[i+1]},${this.height-array[i+2]},${array[i+3]},${this.height-array[i+4]});`;
+                        }
+                        else {
+                            command += `quadraticVertex(${array[i+1]},${array[i+2]},${array[i+3]},${array[i+4]});`;
+                        }
                         i += 4;
                         break;
                     case "Z":
@@ -404,6 +477,18 @@ class Icon {
     }
     strokeWeight(value) {
         this.strokeWeightVar = value;
+        return this;
+    }
+
+    flipHorizontally() {
+        this.flipHorizontallyVar = true;
+        this.generateGraphicString()
+        return this;
+    }
+
+    flipVertically() {
+        this.flipVerticallyVar = true;
+        this.generateGraphicString()
         return this;
     }
 }class Panel {
