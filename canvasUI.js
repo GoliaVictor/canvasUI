@@ -56,8 +56,10 @@ class Blank {
                 if (mouseIsPressed) {
                     this.displayState = `pressed`
                 }
+                doHotmouse = false;
             }
             else {
+                if (this.displayState == "hover" || this.displayState == "pressed") doHotmouse = true;
                 this.displayState = "default"
             }
     
@@ -233,13 +235,18 @@ class Blank {
         return this;
     }
 }let doHotkeys = true;
+let doHotmouse = true;
 
 let hotkey = {
     dataKey: {},
     dataKeyCode: {},
-    on(when, func) {
+    dataMouse: {},
+    onkey(when, func) {
         if (typeof when === "string") hotkey.dataKey[when] = func;
         else if (Number.isInteger(when)) hotkey.dataKeyCode[when] = func;
+    },
+    onmouse(when, func) {
+        if (typeof when === "string") hotkey.dataMouse[when] = func;
     },
     onKeyPressed() {
         if (doHotkeys) {
@@ -248,6 +255,13 @@ let hotkey = {
             }
             for (let keyI of Object.keys(hotkey.dataKey)) {
                 if (key == keyI) hotkey.dataKey[keyI]()
+            }
+        }
+    },
+    onMousePressed() {
+        if (doHotmouse) {
+            for (let mouseKey of Object.keys(hotkey.dataMouse)) {
+                if (mouseButton == mouseKey) hotkey.dataMouse[mouseKey]()
             }
         }
     }
@@ -1121,6 +1135,8 @@ class Label extends Text {
         this.typeable = true;
         this.clickable = true;
 
+        this.hovering = false;
+
         this.showingCursor = false;
         this.lastToggledCursor = new Date();
         this.cursorColourVar = Color.accent;
@@ -1176,6 +1192,12 @@ class Label extends Text {
 
             if (this.mouseOver()) {
                 cursor("text")
+                this.hovering = true;
+                doHotmouse = false;
+            }
+            else {
+                if (this.hovering) doHotmouse = true;
+                this.hovering = false;
             }
 
             push()
@@ -1297,6 +1319,7 @@ class Label extends Text {
                         else {
                             this.editing = false;
                             doHotkeys = true;
+                            doHotmouse = true;
                             this.edited = false;
                             if (this.binding != "") {
                                 eval(`${this.binding} = this.t`)
@@ -1373,7 +1396,7 @@ class Label extends Text {
             if (this.mouseOver()) {
                 this.editing = true;
                 doHotkeys = false;
-                console.log(doHotkeys)
+                doHotmouse = false;
                 this.cursorAfter = this.getClosestCursorAfter(mouseX, mouseY)
                 this.showingCursor = true;
                 this.lastToggledCursor = new Date();
@@ -1381,7 +1404,8 @@ class Label extends Text {
             else {
                 if (this.editing) {
                     this.editing = false;
-                    doHotKeys = true;
+                    doHotkeys = true;
+                    doHotmouse = true;
                 }
             }
         }
@@ -1456,8 +1480,12 @@ class Label extends Text {
             if (mouseIsPressed) {
                 this.displayState = `pressed ${this.on ? "on": "off"}`
             }
+            doHotmouse = false;
+            // console.log(doHotmouse, this.radioName)
         }
         else {
+            if (this.displayState == "hover on" || this.displayState == "hover off" || this.displayState == "pressed on" || this.displayState == "pressed off") doHotmouse = true;
+            // console.log(doHotmouse, this.radioName)
             this.displayState = this.on ? "default on" : "default off"
         }
         
