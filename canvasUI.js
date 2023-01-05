@@ -8,7 +8,7 @@ class Blank {
         this.clickable = false;
         this.typeable = false;
         this.alignment = "leading";
-        this.phantomBinding = "";
+        this.phantomVar = false;
     }
 
     render(x, y) {
@@ -16,8 +16,8 @@ class Blank {
         this.y = y;
     }
 
-    phantom(target) {
-        this.phantomBinding = target;
+    phantom(value) {
+        this.phantomVar = value;
         return this;
     }
 }class Button {
@@ -30,11 +30,11 @@ class Blank {
         this.typeable = false;
         this.clickable = true;
         this.alignment = "center";
-        this.hiddenBinding = "";
-        this.phantomBinding = "";
+        this.hiddenVar = false;
+        this.phantomVar = false;
 
         this.displayState = "default";
-        this.commandVar;
+        this.commandVar = () => {};
 
         this.backgroundVar = {"default": Color.secondary, "hover": Color.brighter(Color.secondary), "pressed": Color.accent};
         this.borderVar = {"default": Color.transparent, "hover": Color.transparent, "pressed": Color.transparent};
@@ -49,7 +49,7 @@ class Blank {
         this.x = x;
         this.y = y;
 
-        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+        if (this.hiddenVar == false) {
             if (this.mouseOver()) {
                 cursor("pointer")
                 this.displayState = `hover`
@@ -75,7 +75,7 @@ class Blank {
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
             
             if (this.contents[this.displayState]) {
-                if (this.contents[this.displayState].phantomBinding == "" || eval(this.contents[this.displayState].phantomBinding) == false) {
+                if (this.contents[this.displayState].phantomVar == false) {
                     let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
                     translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
                     scale(scaleFactor)
@@ -95,12 +95,12 @@ class Blank {
         return this;
     }
 
-    hidden(target) {
-        this.hiddenBinding = target;
+    hidden(value) {
+        this.hiddenVar = value;
         return this;
     }
-    phantom(target) {
-        this.phantomBinding = target;
+    phantom(value) {
+        this.phantomVar = value;
         return this;
     }
     
@@ -110,24 +110,15 @@ class Blank {
     }
 
     onMousePressed() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
-            if (this.popup) {
-                if (this.popup.typeable) {
-                    this.popup.onMousePressed()
-                }
-            }
-        }
+        // if (this.hiddenVar == false && this.phantomVar == false) {
+            
+        // }
     }
 
     onMouseReleased() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             if (this.mouseOver()) {
                 this.commandVar();
-            }
-            if (this.popup) {
-                if (this.popup.typeable) {
-                    this.popup.onKeyPressed()
-                }
             }
         }
     }
@@ -298,8 +289,8 @@ class Icon {
         this.typeable = false;
         this.clickable = false;
         this.alignment = "center";
-        this.hiddenBinding = "";
-        this.phantomBinding = "";
+        this.hiddenVar = false;
+        this.phantomVar = false;
 
         this.generateGraphicString()
 
@@ -453,7 +444,7 @@ class Icon {
     render(x, y, scaleFactor=1) {
         this.x = x;
         this.y = y;
-        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+        if (this.hiddenVar == false) {
             push()
             scale(scaleFactor)
             translate(x, y)
@@ -474,12 +465,12 @@ class Icon {
         return this;
     }
 
-    hidden(target) {
-        this.hiddenBinding = target;
+    hidden(value) {
+        this.hiddenVar = value;
         return this;
     }
-    phantom(target) {
-        this.phantomBinding = target;
+    phantom(value) {
+        this.phantomVar = value;
         return this;
     }
 
@@ -519,8 +510,8 @@ class Icon {
         this.clickable = true;
         this.typeable = true;
         this.alignment = "leading"
-        this.hiddenBinding = "";
-        this.phantomBinding = "";
+        this.hiddenVar = false;
+        this.phantomVar = false;
 
         this.backgroundVar = Color.nearInverse;
         this.borderVar = Color.transparent;
@@ -533,7 +524,7 @@ class Icon {
         this.height = this.pad;
         for (let n = 0; n < this.contents.length; n++) {
             let elem = this.contents[n]
-            if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+            if (elem.phantomVar == false) {
                 this.width = Math.max(this.width, elem.width + 3*this.pad);
                 this.height += elem.height;
                 if (elem.constructor.name == "Label") {
@@ -555,7 +546,7 @@ class Icon {
         this.y = y;
         this.calcDimensions()
 
-        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+        if (this.hiddenVar == false) {
             push()
             fill(this.backgroundVar)
             stroke(this.borderVar)
@@ -565,7 +556,7 @@ class Icon {
             let ySweep = this.pad;
             for (let n = 0; n < this.contents.length; n++) {
                 const elem = this.contents[n]
-                if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+                if (elem.phantomVar == false) {
                     switch (elem.alignment) {
                         case "leading":
                             if (elem.constructor.name == "Title") {
@@ -610,7 +601,7 @@ class Icon {
     }
 
     onKeyPressed() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             for (let n = 0; n < this.contents.length; n++) {
                 if (this.contents[n].typeable) this.contents[n].onKeyPressed()
             }
@@ -618,7 +609,7 @@ class Icon {
     }
 
     onMousePressed() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             for (let n = 0; n < this.contents.length; n++) {
                 if (this.contents[n].clickable) this.contents[n].onMousePressed()
             }
@@ -626,7 +617,7 @@ class Icon {
     }
 
     onMouseReleased() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             for (let n = 0; n < this.contents.length; n++) {
                 if (this.contents[n].clickable) this.contents[n].onMouseReleased()
             }
@@ -642,12 +633,12 @@ class Icon {
         this.alignment = alignment
     }
 
-    hidden(target) {
-        this.hiddenBinding = target;
+    hidden(value) {
+        this.hiddenVar = value;
         return this;
     }
-    phantom(target) {
-        this.phantomBinding = target;
+    phantom(value) {
+        this.phantomVar = value;
         return this;
     }
 
@@ -681,8 +672,8 @@ class Icon {
     constructor(side="right") {
         this.clickable = true;
         this.typeable = true;
-        this.hiddenBinding = "";
-        this.phantomBinding = "";
+        this.hiddenVar = false;
+        this.phantomVar = false;
 
         this.side = side; // left, right, top, bottom
         switch (this.side) {
@@ -714,7 +705,7 @@ class Icon {
         this.x = x;
         this.y = y;
 
-        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+        if (this.hiddenVar == false) {
             if (this.contents) {
                 if (this.side == "left" || this.side == "right") {
                     // Left or right
@@ -766,12 +757,12 @@ class Icon {
         }
     }
 
-    hidden(target) {
-        this.hiddenBinding = target;
+    hidden(value) {
+        this.hiddenVar = value;
         return this;
     }
-    phantom(target) {
-        this.phantomBinding = target;
+    phantom(value) {
+        this.phantomVar = value;
         return this;
     }
 
@@ -817,7 +808,7 @@ class Icon {
     }
 
     onKeyPressed() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             if (this.contents.typeable) {
                 this.contents.onKeyPressed()
             }
@@ -825,7 +816,7 @@ class Icon {
     }
 
     onMousePressed() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             if (this.contents.clickable) {
                 this.contents.onMousePressed();
             }
@@ -833,7 +824,7 @@ class Icon {
     }
 
     onMouseReleased() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             if (this.contents.clickable) {
                 this.contents.onMouseReleased();
             }
@@ -849,8 +840,8 @@ class Icon {
         this.clickable = true;
         this.typeable = true;
         this.alignment = "leading";
-        this.hiddenBinding = "";
-        this.phantomBinding = "";
+        this.hiddenVar = false;
+        this.phantomVar = false;
 
         this.backgroundVar = Color.transparent;
         this.borderVar = Color.transparent;
@@ -878,12 +869,12 @@ class Icon {
         return this;
     }
 
-    hidden(target) {
-        this.hiddenBinding = target;
+    hidden(value) {
+        this.hiddenVar = value;
         return this;
     }
-    phantom(target) {
-        this.phantomBinding = target;
+    phantom(value) {
+        this.phantomVar = value;
         return this;
     }
 
@@ -915,7 +906,7 @@ class Icon {
     }
 
     onKeyPressed() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             for (let n = 0; n < this.contents.length; n++) {
                 if (this.contents[n].typeable) this.contents[n].onKeyPressed()
             }
@@ -923,7 +914,7 @@ class Icon {
     }
 
     onMousePressed() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             for (let n = 0; n < this.contents.length; n++) {
                 if (this.contents[n].clickable) this.contents[n].onMousePressed()
             }
@@ -931,7 +922,7 @@ class Icon {
     }
 
     onMouseReleased() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             for (let n = 0; n < this.contents.length; n++) {
                 if (this.contents[n].clickable) this.contents[n].onMouseReleased()
             }
@@ -950,7 +941,7 @@ class VStack extends Stack {
         let i = 0;
         for (let n = 0; n < this.contents.length; n++) {
             let elem = this.contents[n]
-            if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+            if (elem.phantomVar == false) {
                 i++;
                 this.width = Math.max(this.width, elem.width);
                 this.height += elem.height + this.spacingVar;
@@ -966,7 +957,7 @@ class VStack extends Stack {
         this.y = y;
         this.calcDimensions()
 
-        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+        if (this.hiddenVar == false) {
             push()
             fill(this.backgroundVar)
             stroke(this.borderVar)
@@ -976,7 +967,7 @@ class VStack extends Stack {
             let ySweep = 0;
             for (let n = 0; n < this.contents.length; n++) {
                 let elem = this.contents[n]
-                if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+                if (elem.phantomVar == false) {
                     switch (elem.alignment) {
                         case "leading":
                             elem.render(this.x, this.y + ySweep);
@@ -1006,7 +997,7 @@ class HStack extends Stack {
         let i = 0;
         for (let n = 0; n < this.contents.length; n++) {
             let elem = this.contents[n];
-            if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+            if (elem.phantomVar == false) {
                 i++;
                 this.height = Math.max(this.height, elem.height);
                 this.width += elem.width + this.spacingVar;
@@ -1022,7 +1013,7 @@ class HStack extends Stack {
         this.y = y;
         this.calcDimensions()
 
-        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+        if (this.hiddenVar == false) {
             push()
             fill(this.backgroundVar)
             stroke(this.borderVar)
@@ -1032,7 +1023,7 @@ class HStack extends Stack {
             let xSweep = 0;
             for (let n = 0; n < this.contents.length; n++) {
                 let elem = this.contents[n]
-                if (elem.phantomBinding == "" || eval(elem.phantomBinding) == false) {
+                if (elem.phantomVar == false) {
                     switch (elem.alignment) {
                         case "leading":
                             this.contents[n].render(this.x + xSweep, this.y );
@@ -1062,8 +1053,8 @@ class HStack extends Stack {
         this.typeable = false;
         this.clickable = false;
         this.alignment = "leading";
-        this.hiddenBinding = "";
-        this.phantomBinding = "";
+        this.hiddenVar = false;
+        this.phantomVar = false;
 
         this.binding = "";
 
@@ -1094,12 +1085,12 @@ class HStack extends Stack {
         return this;
     }
 
-    hidden(target) {
-        this.hiddenBinding = target;
+    hidden(value) {
+        this.hiddenVar = value;
         return this;
     }
-    phantom(target) {
-        this.phantomBinding = target;
+    phantom(value) {
+        this.phantomVar = value;
         return this;
     }
 
@@ -1122,7 +1113,7 @@ class HStack extends Stack {
         textAlign(LEFT, TOP)
         this.height = this.tSize*(lines.length + this.pFactor*2)
         
-        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+        if (this.hiddenVar == false) {
             fill(this.backgroundVar)
             stroke(this.borderVar)
             strokeWeight(this.borderWeightVar)
@@ -1289,7 +1280,7 @@ class Label extends Text {
         textAlign(LEFT, TOP)
         this.height = this.tSize*(lines.length + this.pFactor*2)
         
-        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+        if (this.hiddenVar == false) {
 
             if (this.mouseOver()) {
                 cursor("text")
@@ -1339,7 +1330,7 @@ class Label extends Text {
     }
 
     onKeyPressed() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             if (this.editing) {
                 switch (key) {
                     case "ArrowLeft":
@@ -1498,7 +1489,7 @@ class Label extends Text {
     }
 
     onMousePressed() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             if (this.mouseOver()) {
                 this.editing = true;
                 doHotkeys = false;
@@ -1520,7 +1511,7 @@ class Label extends Text {
     }
 
     onMouseReleased() {
-        // if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        // if (this.hiddenVar == false && this.phantomVar == false) {
 
         // }
     }
@@ -1564,8 +1555,8 @@ class Label extends Text {
         this.clickable = true;
         this.typeable = true;
         this.alignment = "leading";
-        this.hiddenBinding = "";
-        this.phantomBinding = "";
+        this.hiddenVar = false;
+        this.phantomVar = false;
 
         this.displayState = "default off";
         this.on = false;
@@ -1653,17 +1644,17 @@ class Label extends Text {
         return this;
     }
 
-    hidden(target) {
-        this.hiddenBinding = target;
+    hidden(value) {
+        this.hiddenVar = value;
         return this;
     }
-    phantom(target) {
-        this.phantomBinding = target;
+    phantom(value) {
+        this.phantomVar = value;
         return this;
     }
 
     onKeyPressed() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             if (this.popupVar && this.on) {
                 if (this.popupVar.typeable) {
                     this.popupVar.onKeyPressed()
@@ -1673,7 +1664,7 @@ class Label extends Text {
     }
 
     onMousePressed() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             if (this.popupVar && this.on) {
                 if (this.popupVar.clickable) {
                     this.popupVar.onMousePressed()
@@ -1683,7 +1674,7 @@ class Label extends Text {
     }
 
     onMouseReleased() {
-        if ((this.hiddenBinding == "" || eval(this.hiddenBinding) == false) && (this.phantomBinding == "" || eval(this.phantomBinding) == false)) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             if (this.mouseOver()) {
                 this.toggle()
                 if (this.binding != "") eval(`${this.binding} = this.on`)
@@ -1861,7 +1852,7 @@ class SlideToggle extends Toggle {
         this.x = x;
         this.y = y;
 
-        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+        if (this.hiddenVar == false) {
             this.update()
             
             push()
@@ -2026,7 +2017,7 @@ class CheckToggle extends Toggle {
         this.x = x;
         this.y = y;
 
-        if (this.hiddenBinding == "" || eval(this.hiddenBinding) == false) {
+        if (this.hiddenVar == false) {
             this.update()
 
             push()
@@ -2037,7 +2028,7 @@ class CheckToggle extends Toggle {
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
             
             if (this.contents[this.displayState]) {
-                if (this.contents[this.displayState].phantomBinding == "" || eval(this.contents[this.displayState].phantomBinding) == false) {
+                if (this.contents[this.displayState].phantomVar == false) {
                     let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
                     translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
                     scale(scaleFactor)
