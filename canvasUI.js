@@ -84,6 +84,15 @@ class Blank {
         return this;
     }
 
+    align(value) {
+        if (value != "leading" && value != "center" && value != "trailing") {
+            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+            return this;
+        }
+        this.alignment = value;
+        return this;
+    }
+
     phantom(value) {
         this.phantomVar = value;
         return this;
@@ -98,12 +107,12 @@ class Blank {
         return this;
     }
 
-    background(value) {
-        this.backgroundVar = value;
+    background(colour) {
+        this.backgroundVar = colour;
         return this;
     }
-    border(value) {
-        this.borderVar = value;
+    border(colour) {
+        this.borderVar = colour;
         return this;
     }
     borderWeight(value) {
