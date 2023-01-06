@@ -940,10 +940,7 @@ class Icon {
             }
         }
     }
-}// NOT FINISHED
-// !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!!
-
-class Slider {
+}class Slider {
     constructor (width, height) {
         this.x;
         this.y;
@@ -959,7 +956,8 @@ class Slider {
         this.displayState = "default"
 
         this.value = 0;
-        this.precisionVar = Infinity;
+        this.minValue = 0;
+        this.maxValue = 100;
         this.binding = "";
         this.editing = false;
 
@@ -973,22 +971,17 @@ class Slider {
 
     update() {
         if (this.binding != "") {
-            let bindValue = parseFloat(eval(this.binding))
+            let bindValue = Math.round(parseFloat(eval(this.binding)))
             if (this.value != bindValue) {
                 // the binding variable changed - update this.value
-                if (bindValue < 0) {
-                    this.value = 0;
+                if (bindValue < this.minValue) {
+                    this.value = this.minValue;
                 }
-                else if (bindValue > 1) {
-                    this.value = 1;
+                else if (bindValue > this.maxValue) {
+                    this.value = this.maxValue;
                 }
                 else {
-                    if (this.precisionVar == Infinity) {
-                        this.value = bindValue;
-                    }
-                    else {
-                        this.value = Math.round(bindValue*this.precisionVar)/this.precisionVar
-                    }
+                    this.value = bindValue;
                 }
             }
         }
@@ -1012,19 +1005,14 @@ class Slider {
     }
 
     set(value) {
-        if (value < 0) {
-            this.value = 0;
+        if (value < this.minValue) {
+            this.value = this.minValue;
         }
-        else if (value > 1) {
-            this.value = 1;
+        else if (value > this.maxValue) {
+            this.value = this.maxValue;
         }
         else {
-            if (this.precisionVar == Infinity) {
-                this.value = value;
-            }
-            else {
-                this.value = Math.round(value*this.precisionVar)/this.precisionVar
-            }
+            this.value = Math.round(value);
         }
         eval(`${this.binding} = this.value`)
         return this;
@@ -1035,8 +1023,12 @@ class Slider {
         return this;
     }
 
-    precision(value) {
-        this.precisionVar = value;
+    min(value) {
+        this.minValue = value;
+        return this;
+    }
+    max(value) {
+        this.maxValue = value;
         return this;
     }
 
@@ -1135,7 +1127,7 @@ class HSlider extends Slider {
             this.update()
             
             if (this.editing) {
-                this.set((mouseX-this.x)/this.width)
+                this.set((mouseX-this.x)/this.width*(this.maxValue-this.minValue)+this.minValue)
             }
 
             push()
@@ -1146,7 +1138,7 @@ class HSlider extends Slider {
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
             pop()
 
-            this.knobVar.render(this.value*this.width+this.x, this.y+this.height/2)
+            this.knobVar.render((this.value-this.minValue)*this.width/(this.maxValue-this.minValue)+this.x, this.y+this.height/2)
         }
     }
 }
@@ -1166,7 +1158,7 @@ class VSlider extends Slider {
             this.update()
             
             if (this.editing) {
-                this.set(1+(this.y-mouseY)/this.height)
+                this.set((this.height+this.y-mouseY)*(this.maxValue-this.minValue)/this.height + this.minValue)
             }
 
             push()
@@ -1177,7 +1169,7 @@ class VSlider extends Slider {
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
             pop()
 
-            this.knobVar.render(this.x+this.width/2, this.height*(1-this.value)+this.y)
+            this.knobVar.render(this.x+this.width/2, this.height-(this.value-this.minValue)*this.height/(this.maxValue-this.minValue)+this.y)
         }
     }
 }class Stack {
