@@ -20,6 +20,107 @@ class Blank {
         this.phantomVar = value;
         return this;
     }
+
+    setWidth(value) {
+        this.width = value;
+        return this;
+    }
+    setHeight(value) {
+        this.height = value;
+        return this;
+    }
+}class Block {
+    constructor(width=50, height=50) {
+        this.x;
+        this.y;
+        this.width = width;
+        this.height = height;
+
+        this.clickable = false;
+        this.typeable = false;
+        this.alignment = "leading";
+        this.phantomVar = false;
+        this.hiddenVar = false;
+
+        this.centeredVar = false;
+
+        this.backgroundVar = Color.primary;
+        this.borderVar = Color.transparent;
+        this.borderWeightVar = 1;
+        this.cornerRadiusVar = [10, 10, 10, 10]
+    }
+
+    render(x, y) {
+        this.x = x;
+        this.y = y;
+
+        if (this.hiddenVar == false) {
+            push()
+            fill(this.backgroundVar)
+            stroke(this.borderVar)
+            strokeWeight(this.borderWeightVar)
+            if (this.centeredVar) rectMode(CENTER)
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+            pop()
+        }
+    }
+
+    mouseOver() {
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
+        return false;
+    }
+
+    setWidth(value) {
+        this.width = value;
+        return this;
+    }
+    setHeight(value) {
+        this.height = value;
+        return this;
+    }
+
+    phantom(value) {
+        this.phantomVar = value;
+        return this;
+    }
+    hidden(value) {
+        this.hiddenVar = value;
+        return this;
+    }
+
+    centered(value) {
+        this.centeredVar = value;
+        return this;
+    }
+
+    background(value) {
+        this.backgroundVar = value;
+        return this;
+    }
+    border(value) {
+        this.borderVar = value;
+        return this;
+    }
+    borderWeight(value) {
+        this.borderWeightVar = value;
+        return this;
+    }
+    cornerRadius(tl, tr, br, bl) {
+        if (tr == undefined && br == undefined && bl == undefined) {
+            // r1 applies to all corners
+            this.cornerRadiusVar = [tl, tl, tl, tl];
+        }
+        else {
+            // each one individually applies to their own corner with r1 starting at top-left and successive rs moving clockwise around the shape
+            this.cornerRadiusVar = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
+        }
+        return this;
+    }
 }class Button {
     constructor (width=80, height=25) {
         this.x;
@@ -830,6 +931,246 @@ class Icon {
             }
         }
     }
+}// NOT FINISHED
+// !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!!
+
+class Slider {
+    constructor (width, height) {
+        this.x;
+        this.y;
+        this.width = width;
+        this.height = height;
+
+        this.typeable = false;
+        this.clickable = true;
+        this.alignment = "center";
+        this.hiddenVar = false;
+        this.phantomVar = false;
+
+        this.displayState = "default"
+
+        this.value = 0;
+        this.precisionVar = Infinity;
+        this.binding = "";
+        this.editing = false;
+
+        this.backgroundVar = Color.secondary;
+        this.borderVar = Color.transparent;
+        this.borderWeightVar = 1;
+        this.cornerRadiusVar = [6, 6, 6, 6];
+
+        this.knobVar;
+    }
+
+    update() {
+        if (this.binding != "") {
+            let bindValue = parseFloat(eval(this.binding))
+            if (this.value != bindValue) {
+                // the binding variable changed - update this.value
+                if (bindValue < 0) {
+                    this.value = 0;
+                }
+                else if (bindValue > 1) {
+                    this.value = 1;
+                }
+                else {
+                    if (this.precisionVar == Infinity) {
+                        this.value = bindValue;
+                    }
+                    else {
+                        this.value = Math.round(bindValue*this.precisionVar)/this.precisionVar
+                    }
+                }
+            }
+        }
+        
+        if (this.mouseOver() || this.knobVar.mouseOver()) {
+            cursor("pointer")
+            this.displayState = "hover"
+            if (this.editing) {
+                this.displayState = "pressed"
+            }
+            doHotMouseDown = false;
+            doHotMouseUp = false;
+        }
+        else {
+            if (this.displayState == "hover" || this.displayState == "pressed") {
+                doHotMouseDown = true;
+                doHotMouseUp = true;
+            }
+            this.displayState = "default"
+        }
+    }
+
+    set(value) {
+        if (value < 0) {
+            this.value = 0;
+        }
+        else if (value > 1) {
+            this.value = 1;
+        }
+        else {
+            if (this.precisionVar == Infinity) {
+                this.value = value;
+            }
+            else {
+                this.value = Math.round(value*this.precisionVar)/this.precisionVar
+            }
+        }
+        eval(`${this.binding} = this.value`)
+        return this;
+    }
+
+    bind(target) {
+        this.binding = target;
+        return this;
+    }
+
+    precision(value) {
+        this.precisionVar = value;
+        return this;
+    }
+
+    align(value) {
+        if (value != "leading" && value != "center" && value != "trailing") {
+            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+            return this;
+        }
+        this.alignment = value;
+        return this;
+    }
+
+    hidden(value) {
+        this.hiddenVar = value;
+        return this;
+    }
+    phantom(value) {
+        this.phantomVar = value;
+        return this;
+    }
+
+    onMousePressed() {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.mouseOver() || this.knobVar.mouseOver()) {
+                this.editing = true;
+                console.log(this.editing)
+            }
+        }
+    }
+
+    onMouseReleased() {
+        this.editing = false
+        console.log(this.editing)
+        // if (this.hiddenVar == false && this.phantomVar == false) {
+       
+        // }
+    }
+
+    mouseOver() {
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        return false;
+    }
+
+    setWidth(value) {
+        this.width = value;
+        return this;
+    }
+
+    setHeight(value) {
+        this.height = value;
+        return this;
+    }
+
+    background(colour) {
+        this.backgroundVar = colour;
+        return this;
+    }
+    border(colour) {
+        this.borderVar = colour;
+        return this;
+    }
+    borderWeight(value) {
+        this.borderWeightVar = value;
+        return this;
+    }
+    cornerRadius(tl=this.height, tr, br, bl) {
+        if (tr == undefined && br == undefined && bl == undefined) {
+            // r1 applies to all corners
+            this.cornerRadiusVar = [tl, tl, tl, tl];
+        }
+        else {
+            // each one individually applies to their own corner with tl as top-left and tr as top-right etc
+            this.cornerRadiusVar[when] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
+        }
+        return this;
+    }
+
+    knob(elem) {
+        this.knobVar = elem;
+        return this;
+    }
+}
+
+class HSlider extends Slider {
+    constructor(width=100, height=10) {
+        super(width, height)
+
+        this.knobVar = new Block(height*1.8, height*1.8).cornerRadius(height*1.8).centered(true)
+    }
+
+    render(x, y) {
+        this.x = x;
+        this.y = y;
+
+        if (this.hiddenVar == false) {
+            this.update()
+            
+            if (this.editing) {
+                this.set((mouseX-this.x)/this.width)
+            }
+
+            push()
+            // Background
+            fill(this.backgroundVar)
+            stroke(this.borderVar)
+            strokeWeight(this.borderWeightVar)
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+            pop()
+
+            this.knobVar.render(this.value*this.width+this.x, this.y+this.height/2)
+        }
+    }
+}
+
+class VSlider extends Slider {
+    constructor(width=10, height=100) {
+        super(width, height)
+
+        this.knobVar = new Block(width*1.8, width*1.8).cornerRadius(width*1.8).centered(true)
+    }
+
+    render(x, y) {
+        this.x = x;
+        this.y = y;
+
+        if (this.hiddenVar == false) {
+            this.update()
+            
+            if (this.editing) {
+                this.set(1+(this.y-mouseY)/this.height)
+            }
+
+            push()
+            // Background
+            fill(this.backgroundVar)
+            stroke(this.borderVar)
+            strokeWeight(this.borderWeightVar)
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+            pop()
+
+            this.knobVar.render(this.x+this.width/2, this.height*(1-this.value)+this.y)
+        }
+    }
 }class Stack {
     constructor() {
         this.width = 0;
@@ -1044,11 +1385,14 @@ class HStack extends Stack {
     constructor(text) {
         this.x;
         this.y;
-        this.t = text;
+        this.t = `${text}`;
         this.tSize = 18;
         this.pFactor = 0;
         this.width = 0;
         this.height = 0;
+
+        this.minWidthVar = 0;
+        this.minHeightVar = 0;
 
         this.typeable = false;
         this.clickable = false;
@@ -1072,6 +1416,7 @@ class HStack extends Stack {
 
     bind(target) {
         this.binding = target;
+        this.t = `${eval(target)}`
         return this;
     }
 
@@ -1109,9 +1454,9 @@ class HStack extends Stack {
             if (textWidth(lines[n]) > textWidth(lines[longestLineIndex])) longestLineIndex = n;
         }
         let tWidth = textWidth(lines[longestLineIndex])
-        this.width = tWidth + this.tSize*this.pFactor*2
+        this.width = Math.max(this.minWidthVar, tWidth + this.tSize*this.pFactor*2)
         textAlign(LEFT, TOP)
-        this.height = this.tSize*(lines.length + this.pFactor*2)
+        this.height = Math.max(this.minHeightVar, this.tSize*(lines.length + this.pFactor*2))
         
         if (this.hiddenVar == false) {
             fill(this.backgroundVar)
@@ -1190,6 +1535,16 @@ class HStack extends Stack {
         this.pFactor = value;
         return this;
     }
+
+    minWidth(value) {
+        this.minWidthVar = value;
+        return this;
+    }
+
+    minHeight(value) {
+        this.minHeightVar = value;
+        return this;
+    }
 }
 
 class Title extends Text {
@@ -1246,7 +1601,7 @@ class Label extends Text {
             if (this.t != eval(this.binding)) {
                 if (!this.edited) {
                     // the binding variable changed - update this.t
-                    this.t = eval(this.binding);
+                    this.t = `${eval(this.binding)}`;
                     this.editing = false;
                     this.cursorAfter = this.t;
                 }
@@ -1276,9 +1631,9 @@ class Label extends Text {
             if (textWidth(lines[n]) > textWidth(lines[longestLineIndex])) longestLineIndex = n;
         }
         let tWidth = textWidth(lines[longestLineIndex])
-        this.width = tWidth + this.tSize*this.pFactor*2
+        this.width = Math.max(this.minWidthVar, tWidth + this.tSize*this.pFactor*2)
         textAlign(LEFT, TOP)
-        this.height = this.tSize*(lines.length + this.pFactor*2)
+        this.height = Math.max(this.minHeightVar, this.tSize*(lines.length + this.pFactor*2))
         
         if (this.hiddenVar == false) {
 
@@ -1841,11 +2196,14 @@ class SlideToggle extends Toggle {
 
         this.cornerRadiusVar = {"default on": [this.height, this.height, this.height, this.height], "default off": [this.height, this.height, this.height, this.height], "hover on": [this.height, this.height, this.height, this.height], "hover off": [this.height, this.height, this.height, this.height], "pressed on": [this.height, this.height, this.height, this.height], "pressed off": [this.height, this.height, this.height, this.height]};
 
-        this.knobColourVar = {"default on": Color.white, "default off": Color.white, "hover on": Color.white, "hover off": Color.white, "pressed on": Color.white, "pressed off": Color.white};
-        this.knobBorderVar = {"default on": Color.transparent, "default off": Color.transparent, "hover on": Color.transparent, "hover off": Color.transparent, "pressed on": Color.transparent, "pressed off": Color.transparent};
-        this.knobBorderWeightVar = {"default on": 1, "default off": 1, "hover on": 1, "hover off": 1, "pressed on": 1, "pressed off": 1};
-        this.knobCornerRadiusVar = {"default on": [this.height, this.height, this.height, this.height], "default off": [this.height, this.height, this.height, this.height], "hover on": [this.height, this.height, this.height, this.height], "hover off": [this.height, this.height, this.height, this.height], "pressed on": [this.height, this.height, this.height, this.height], "pressed off": [this.height, this.height, this.height, this.height]};
-
+        this.knobVar = {
+            "default on": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true), 
+            "default off": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true), 
+            "hover on": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true), 
+            "hover off": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true), 
+            "pressed on": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true), 
+            "pressed off": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true)
+        }
     }
 
     render(x, y) {
@@ -1861,19 +2219,17 @@ class SlideToggle extends Toggle {
             stroke(this.borderVar[this.displayState])
             strokeWeight(this.borderWeightVar[this.displayState])
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
+            pop()
 
             // Knob
-            fill(this.knobColourVar[this.displayState])
-            stroke(this.knobBorderVar[this.displayState])
-            strokeWeight(this.knobBorderWeightVar[this.displayState])
-            rectMode(CENTER)
+            this.knobVar[this.displayState].setWidth(this.height-4)
+            this.knobVar[this.displayState].setHeight(this.height-4)
             if (this.displayState.split(" ")[1] == "on") {
-                rect(this.x + this.width - this.height/2, this.y + this.height/2, this.height-4, this.height-4, this.knobCornerRadiusVar[this.displayState][0], this.knobCornerRadiusVar[this.displayState][1], this.knobCornerRadiusVar[this.displayState][2], this.knobCornerRadiusVar[this.displayState][3])
+                this.knobVar[this.displayState].render(this.x + this.width - this.height/2, this.y + this.height/2)
             }
             else {
-                rect(this.x + this.height/2, this.y + this.height/2, this.height-4, this.height-4, this.knobCornerRadiusVar[this.displayState][0], this.knobCornerRadiusVar[this.displayState][1], this.knobCornerRadiusVar[this.displayState][2], this.knobCornerRadiusVar[this.displayState][3])
+                this.knobVar[this.displayState].render(this.x + this.height/2, this.y + this.height/2)
             }
-            pop()
 
             if (this.popupVar && this.on) {
                 switch (this.popupVar.side) {
@@ -1897,107 +2253,24 @@ class SlideToggle extends Toggle {
         }
     }
 
-    knobColour(colour, when) {
+    knob(elem, when) {
         this.checkWhen(when, () => {
-            this.knobColourVar[when] = colour;
+            this.knobVar[when] = elem;
         }, () => {
-            this.knobColourVar["default on"] = colour;
-            this.knobColourVar["default off"] = colour;
-            this.knobColourVar["hover on"] = colour;
-            this.knobColourVar["hover off"] = colour;
-            this.knobColourVar["pressed on"] = colour;
-            this.knobColourVar["pressed off"] = colour;
+            this.knobVar["default on"] = elem;
+            this.knobVar["default off"] = elem;
+            this.knobVar["hover on"] = elem;
+            this.knobVar["hover off"] = elem;
+            this.knobVar["pressed on"] = elem;
+            this.knobVar["pressed off"] = elem;
         }, () => {
-            this.knobColourVar[`${when} on`] = colour;
-            this.knobColourVar[`${when} off`] = colour;
+            this.knobVar[`${when} on`] = elem;
+            this.knobVar[`${when} off`] = elem;
         }, () => {
-            this.knobColourVar[`default ${when}`] = colour;
-            this.knobColourVar[`hover ${when}`] = colour;
-            this.knobColourVar[`pressed ${when}`] = colour;
-        }, "slider toggle knobColour")
-        return this;
-    }
-    knobBorder(colour, when) {
-        this.checkWhen(when, () => {
-            this.knobBorderVar[when] = colour;
-        }, () => {
-            this.knobBorderVar["default on"] = colour;
-            this.knobBorderVar["default off"] = colour;
-            this.knobBorderVar["hover on"] = colour;
-            this.knobBorderVar["hover off"] = colour;
-            this.knobBorderVar["pressed on"] = colour;
-            this.knobBorderVar["pressed off"] = colour;
-        }, () => {
-            this.knobBorderVar[`${when} on`] = colour;
-            this.knobBorderVar[`${when} off`] = colour;
-        }, () => {
-            this.knobBorderVar[`default ${when}`] = colour;
-            this.knobBorderVar[`hover ${when}`] = colour;
-            this.knobBorderVar[`pressed ${when}`] = colour;
-        }, "slider toggle knobBorder")
-        return this;
-    }
-    knobBorderWeight(value, when) {
-        this.checkWhen(when, () => {
-            this.knobBorderWeightVar[when] = value;
-        }, () => {
-            this.knobBorderWeightVar["default on"] = value;
-            this.knobBorderWeightVar["default off"] = value;
-            this.knobBorderWeightVar["hover on"] = value;
-            this.knobBorderWeightVar["hover off"] = value;
-            this.knobBorderWeightVar["pressed on"] = value;
-            this.knobBorderWeightVar["pressed off"] = value;
-        }, () => {
-            this.knobBorderWeightVar[`${when} on`] = value;
-            this.knobBorderWeightVar[`${when} off`] = value;
-        }, () => {
-            this.knobBorderWeightVar[`default ${when}`] = value;
-            this.knobBorderWeightVar[`hover ${when}`] = value;
-            this.knobBorderWeightVar[`pressed ${when}`] = value;
-        }, "slider toggle knobBorderWeightVar")
-        return this;
-    }
-    knobCornerRadius(tl=this.height, tr, br, bl, when) {
-        if (tr == undefined && br == undefined && bl == undefined) {
-            // r1 applies to all corners
-            this.checkWhen(when, () => {
-                this.knobCornerRadiusVar[when] = [tl, tl, tl, tl];
-            }, () => {
-                this.knobCornerRadiusVar["default on"] = [tl, tl, tl, tl];
-                this.knobCornerRadiusVar["default off"] = [tl, tl, tl, tl];
-                this.knobCornerRadiusVar["hover on"] = [tl, tl, tl, tl];
-                this.knobCornerRadiusVar["hover off"] = [tl, tl, tl, tl];
-                this.knobCornerRadiusVar["pressed on"] = [tl, tl, tl, tl];
-                this.knobCornerRadiusVar["pressed off"] = [tl, tl, tl, tl];
-            }, () => {
-                this.knobCornerRadiusVar[`${when} on`] = [tl, tl, tl, tl];
-                this.knobCornerRadiusVar[`${when} off`] = [tl, tl, tl, tl];
-            }, () => {
-                this.knobCornerRadiusVar[`default ${when}`] = [tl, tl, tl, tl];
-                this.knobCornerRadiusVar[`hover ${when}`] = [tl, tl, tl, tl];
-                this.knobCornerRadiusVar[`pressed ${when}`] = [tl, tl, tl, tl];
-            }, "slider toggle knobCornerRadius")
-        }
-        else {
-            // each one individually applies to their own corner with tl as top-left and tr as top-right etc
-            this.checkWhen(when, () => {
-                this.knobCornerRadiusVar[when] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-            }, () => {
-                this.knobCornerRadiusVar["default on"] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-                this.knobCornerRadiusVar["default off"] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-                this.knobCornerRadiusVar["hover on"] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-                this.knobCornerRadiusVar["hover off"] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-                this.knobCornerRadiusVar["pressed on"] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-                this.knobCornerRadiusVar["pressed off"] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-            }, () => {
-                this.knobCornerRadiusVar[`${when} on`] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-                this.knobCornerRadiusVar[`${when} off`] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-            }, () => {
-                this.knobCornerRadiusVar[`default ${when}`] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-                this.knobCornerRadiusVar[`hover ${when}`] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-                this.knobCornerRadiusVar[`pressed ${when}`] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
-            }, "slider toggle knobCornerRadius")
-        }
+            this.knobVar[`default ${when}`] = elem;
+            this.knobVar[`hover ${when}`] = elem;
+            this.knobVar[`pressed ${when}`] = elem;
+        }, "slider toggle knob")
         return this;
     }
 }
