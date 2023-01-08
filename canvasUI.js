@@ -1185,8 +1185,8 @@ class Icon {
         return this;
     }
 
-    background(colour) {
-        this.backgroundVar = colour;
+    background(input) {
+        this.backgroundVar = input;
         return this;
     }
     border(colour) {
@@ -1243,7 +1243,13 @@ class HSlider extends Slider {
             push()
             if (this.centeredVar) translate(-this.width/2, -this.height/2)
             // Background
-            fill(this.backgroundVar)
+            if (typeof this.backgroundVar == "function") {
+                this.backgroundVar(this.x, this.y, this.width, this.height)
+                noFill()
+            }
+            else {
+                fill(this.backgroundVar)
+            }
             stroke(this.borderVar)
             strokeWeight(this.borderWeightVar)
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
@@ -1291,7 +1297,13 @@ class VSlider extends Slider {
             push()
             if (this.centeredVar) translate(-this.width/2, -this.height/2)
             // Background
-            fill(this.backgroundVar)
+            if (typeof this.backgroundVar == "function") {
+                this.backgroundVar(this.x, this.y, this.width, this.height)
+                noFill()
+            }
+            else {
+                fill(this.backgroundVar)
+            }
             stroke(this.borderVar)
             strokeWeight(this.borderWeightVar)
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
@@ -1415,7 +1427,13 @@ class VSlider extends Slider {
             push()
             if (this.centeredVar) translate(-this.width/2, -this.height/2)
             // Background
-            fill(this.backgroundVar)
+            if (typeof this.backgroundVar == "function") {
+                this.backgroundVar(this.x, this.y, this.width, this.height)
+                noFill()
+            }
+            else {
+                fill(this.backgroundVar)
+            }
             stroke(this.borderVar)
             strokeWeight(this.borderWeightVar)
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
@@ -1546,8 +1564,8 @@ class VSlider extends Slider {
         return this;
     }
 
-    background(colour) {
-        this.backgroundVar = colour;
+    background(input) {
+        this.backgroundVar = input;
         return this;
     }
     border(colour) {
@@ -2690,7 +2708,7 @@ class SlideToggle extends Toggle {
             stroke(this.borderVar[this.displayState])
             strokeWeight(this.borderWeightVar[this.displayState])
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
-
+            
             // Knob
             this.knobVar[this.displayState].setWidth(this.height-4)
             this.knobVar[this.displayState].setHeight(this.height-4)
@@ -2700,6 +2718,7 @@ class SlideToggle extends Toggle {
             else {
                 this.knobVar[this.displayState].render(this.x + this.height/2, this.y + this.height/2)
             }
+            pop()
 
             if (this.popupVar && this.on) {
                 switch (this.popupVar.side) {
@@ -2720,7 +2739,6 @@ class SlideToggle extends Toggle {
                         break;
                 }
             }
-            pop()
         }
     }
 
@@ -2780,6 +2798,7 @@ class CheckToggle extends Toggle {
                     this.contents[this.displayState].render(0, 0)
                 }
             }
+            pop()
 
             if (this.popupVar && this.on) {
                 switch (this.popupVar.side) {
@@ -2800,7 +2819,6 @@ class CheckToggle extends Toggle {
                         break;
                 }
             }
-            pop()
         }
     }
 
