@@ -5,6 +5,8 @@ class Blank {
         this.width = width;
         this.height = height;
 
+        this.centeredVar = false;
+
         this.clickable = false;
         this.typeable = false;
         this.alignment = "leading";
@@ -28,6 +30,21 @@ class Blank {
     setHeight(value) {
         this.height = value;
         return this;
+    }
+
+    centered(value=true) {
+        this.centeredVar = value;
+        return this;
+    }
+
+    mouseOver() {
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
+        return false;
     }
 }class Block {
     constructor(width=50, height=50) {
@@ -56,10 +73,10 @@ class Blank {
 
         if (this.hiddenVar == false) {
             push()
+            if (this.centeredVar) translate(-this.width/2, -this.height/2)
             fill(this.backgroundVar)
             stroke(this.borderVar)
             strokeWeight(this.borderWeightVar)
-            if (this.centeredVar) rectMode(CENTER)
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
             pop()
         }
@@ -93,16 +110,16 @@ class Blank {
         return this;
     }
 
-    phantom(value) {
-        this.phantomVar = value;
-        return this;
-    }
     hidden(value) {
         this.hiddenVar = value;
         return this;
     }
+    phantom(value) {
+        this.phantomVar = value;
+        return this;
+    }
 
-    centered(value) {
+    centered(value=true) {
         this.centeredVar = value;
         return this;
     }
@@ -143,6 +160,7 @@ class Blank {
         this.hiddenVar = false;
         this.phantomVar = false;
 
+        this.centeredVar = false;
         this.displayState = "default";
         this.commandVar = () => {};
 
@@ -178,6 +196,7 @@ class Blank {
             }
     
             push()
+            if (this.centeredVar) translate(-this.width/2, -this.height/2)
             // Background
             fill(this.backgroundVar[this.displayState])
             stroke(this.borderVar[this.displayState])
@@ -213,6 +232,11 @@ class Blank {
         this.phantomVar = value;
         return this;
     }
+
+    centered(value=true) {
+        this.centeredVar = value;
+        return this;
+    }
     
     command(func) {
         this.commandVar = func;
@@ -234,7 +258,12 @@ class Blank {
     }
 
     mouseOver() {
-        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
         return false;
     }
 
@@ -402,6 +431,8 @@ class Icon {
         this.hiddenVar = false;
         this.phantomVar = false;
 
+        this.centeredVar = false;
+
         this.generateGraphicString()
 
         this.fillColourVar = Color.transparent;
@@ -557,12 +588,23 @@ class Icon {
         if (this.hiddenVar == false) {
             push()
             scale(scaleFactor)
+            if (this.centeredVar) translate(-this.width/2, -this.height/2)
             translate(x, y)
             fill(this.fillColourVar)
             stroke(this.strokeColourVar)
             eval(this.graphicString)
             pop()
         }
+    }
+
+    mouseOver() {
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
+        return false;
     }
 
     align(value) {
@@ -581,6 +623,11 @@ class Icon {
     }
     phantom(value) {
         this.phantomVar = value;
+        return this;
+    }
+
+    centered(value=true) {
+        this.centeredVar = value;
         return this;
     }
 
@@ -623,6 +670,8 @@ class Icon {
         this.hiddenVar = false;
         this.phantomVar = false;
 
+        this.centeredVar = false;
+
         this.backgroundVar = Color.nearInverse;
         this.borderVar = Color.transparent;
         this.borderWeightVar = 1;
@@ -658,11 +707,11 @@ class Icon {
 
         if (this.hiddenVar == false) {
             push()
+            if (this.centeredVar) translate(-this.width/2, -this.height/2)
             fill(this.backgroundVar)
             stroke(this.borderVar)
             strokeWeight(this.borderWeightVar)
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-            pop()
             let ySweep = this.pad;
             for (let n = 0; n < this.contents.length; n++) {
                 const elem = this.contents[n]
@@ -673,7 +722,7 @@ class Icon {
                                 if (n != 0) ySweep += this.pad/2
                                 elem.render(this.x + this.pad, this.y + ySweep);
                             }
-                            else{
+                            else {
                                 elem.render(this.x + 1.5*this.pad, this.y + ySweep);
                             }
                             break;
@@ -693,7 +742,7 @@ class Icon {
                             }
                             break;
                     }
-
+                    
                     if (elem.constructor.name == "Label") {
                         ySweep += elem.height + this.pad/4;
                     }
@@ -702,6 +751,7 @@ class Icon {
                     }
                 }
             }
+            pop()
         }
     }
 
@@ -734,6 +784,16 @@ class Icon {
         }
     }
 
+    mouseOver() {
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
+        return false;
+    }
+
     padding(value) {
         this.pad = value;
         return this;
@@ -749,6 +809,11 @@ class Icon {
     }
     phantom(value) {
         this.phantomVar = value;
+        return this;
+    }
+
+    centered(value=true) {
+        this.centeredVar = value;
         return this;
     }
 
@@ -940,6 +1005,16 @@ class Icon {
             }
         }
     }
+
+    mouseOver() {
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
+        return false;
+    }
 }class Slider {
     constructor (width, height) {
         this.x;
@@ -947,12 +1022,13 @@ class Icon {
         this.width = width;
         this.height = height;
 
-        this.typeable = false;
+        this.typeable = true;
         this.clickable = true;
         this.alignment = "center";
         this.hiddenVar = false;
         this.phantomVar = false;
 
+        this.centeredVar = false;
         this.displayState = "default"
 
         this.value = 0;
@@ -960,6 +1036,8 @@ class Icon {
         this.maxValue = 100;
         this.binding = "";
         this.editing = false;
+        this.editingCursorOffset = 0;
+        this.lockedVar = false;
 
         this.backgroundVar = Color.secondary;
         this.borderVar = Color.transparent;
@@ -1014,7 +1092,7 @@ class Icon {
         else {
             this.value = Math.round(value);
         }
-        eval(`${this.binding} = this.value`)
+        if (this.binding != "") eval(`${this.binding} = this.value`)
         return this;
     }
 
@@ -1050,25 +1128,50 @@ class Icon {
         return this;
     }
 
+    centered(value=true) {
+        this.centeredVar = value;
+        return this;
+    }
+    
+    locked(value=true) {
+        this.lockedVar = value;
+        return this;
+    }
+
     onMousePressed() {
         if (this.hiddenVar == false && this.phantomVar == false) {
-            if (this.mouseOver() || this.knobVar.mouseOver()) {
+            if (this.knobVar.mouseOver()) {
+                this.calcEditingCursorOffset();
                 this.editing = true;
-                console.log(this.editing)
             }
+            else if (this.mouseOver()) {
+                this.editing = true;
+            }
+            if (this.knobVar.clickable) this.knobVar.onMousePressed()
         }
     }
 
     onMouseReleased() {
         this.editing = false
-        console.log(this.editing)
-        // if (this.hiddenVar == false && this.phantomVar == false) {
-       
-        // }
+        this.editingCursorOffset = 0;
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.knobVar.clickable) this.knobVar.onMouseReleased()
+        }
+    }
+
+    onKeyPressed() {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.knobVar.typeable) this.knobVar.onKeyPressed()
+        }
     }
 
     mouseOver() {
-        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
         return false;
     }
 
@@ -1101,7 +1204,7 @@ class Icon {
         }
         else {
             // each one individually applies to their own corner with tl as top-left and tr as top-right etc
-            this.cornerRadiusVar[when] = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
+            this.cornerRadiusVar = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
         }
         return this;
     }
@@ -1124,22 +1227,39 @@ class HSlider extends Slider {
         this.y = y;
 
         if (this.hiddenVar == false) {
-            this.update()
-            
-            if (this.editing) {
-                this.set((mouseX-this.x)/this.width*(this.maxValue-this.minValue)+this.minValue)
+            if (this.lockedVar == false) {
+                this.update()
+
+                if (this.editing) {
+                    if (this.centeredVar) {
+                        this.set(Math.round((mouseX-this.editingCursorOffset-this.x+this.width/2)/this.width*(this.maxValue-this.minValue)+this.minValue))
+                    }
+                    else {
+                        this.set(Math.round((mouseX-this.editingCursorOffset-this.x)/this.width*(this.maxValue-this.minValue)+this.minValue))
+                    }
+                }
             }
 
             push()
+            if (this.centeredVar) translate(-this.width/2, -this.height/2)
             // Background
             fill(this.backgroundVar)
             stroke(this.borderVar)
             strokeWeight(this.borderWeightVar)
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
             pop()
-
-            this.knobVar.render((this.value-this.minValue)*this.width/(this.maxValue-this.minValue)+this.x, this.y+this.height/2)
+            
+            if (this.centeredVar) {
+                this.knobVar.render((this.value-this.minValue)*this.width/(this.maxValue-this.minValue)+this.x-this.width/2, this.y)
+            }
+            else {
+                this.knobVar.render((this.value-this.minValue)*this.width/(this.maxValue-this.minValue)+this.x, this.y+this.height/2)
+            }
         }
+    }
+
+    calcEditingCursorOffset() {
+        this.editingCursorOffset = mouseX-this.knobVar.x;
     }
 }
 
@@ -1155,22 +1275,304 @@ class VSlider extends Slider {
         this.y = y;
 
         if (this.hiddenVar == false) {
-            this.update()
+            if (this.lockedVar == false) {
+                this.update()
             
-            if (this.editing) {
-                this.set((this.height+this.y-mouseY)*(this.maxValue-this.minValue)/this.height + this.minValue)
+                if (this.editing) {
+                    if (this.centeredVar) {
+                        this.set(Math.round((this.height/2+this.y-mouseY+this.editingCursorOffset)*(this.maxValue-this.minValue)/this.height + this.minValue))
+                    }
+                    else {
+                        this.set(Math.round((this.height+this.y-mouseY+this.editingCursorOffset)*(this.maxValue-this.minValue)/this.height + this.minValue))
+                    }
+                }
             }
 
             push()
+            if (this.centeredVar) translate(-this.width/2, -this.height/2)
             // Background
             fill(this.backgroundVar)
             stroke(this.borderVar)
             strokeWeight(this.borderWeightVar)
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
             pop()
-
-            this.knobVar.render(this.x+this.width/2, this.height-(this.value-this.minValue)*this.height/(this.maxValue-this.minValue)+this.y)
+            
+            if (this.centeredVar) {
+                this.knobVar.render(this.x, this.height/2-(this.value-this.minValue)*this.height/(this.maxValue-this.minValue)+this.y)
+            }
+            else {
+                this.knobVar.render(this.x+this.width/2, this.height-(this.value-this.minValue)*this.height/(this.maxValue-this.minValue)+this.y)
+            }
         }
+    }
+
+    calcEditingCursorOffset() {
+        this.editingCursorOffset = mouseY-this.knobVar.y;
+    }
+}class Slider2D {
+    constructor (width=100, height=100) {
+        this.x;
+        this.y;
+        this.width = width;
+        this.height = height;
+
+        this.typeable = true;
+        this.clickable = true;
+        this.alignment = "leading";
+        this.hiddenVar = false;
+        this.phantomVar = false;
+
+        this.centeredVar = false;
+        this.displayState = "default"
+
+        this.value = {x: 0, y: 0};
+        this.minValue = {x: 0, y: 0};
+        this.maxValue = {x: 100, y: 100};
+        this.binding = "";
+        this.editing = false;
+        this.lockedVar = false;
+        this.editingCursorOffset = {x: 0, y: 0};
+
+        this.backgroundVar = Color.secondary;
+        this.borderVar = Color.transparent;
+        this.borderWeightVar = 1;
+        this.cornerRadiusVar = [6, 6, 6, 6];
+
+        this.knobVar = new Block(18, 18).cornerRadius(18).centered(true)
+    }
+
+    update() {
+        if (this.binding != "") {
+            let bindValue = {x: Math.round(eval(this.binding).x), y: Math.round(eval(this.binding).y)}
+            if (this.value.x != bindValue.x) {
+                // the binding variable.x changed - update this.value.x
+                if (bindValue.x < this.minValue.x) {
+                    this.value.x = this.minValue.x;
+                }
+                else if (bindValue.x > this.maxValue.x) {
+                    this.value.x = this.maxValue.x;
+                }
+                else {
+                    this.value.x = bindValue.x;
+                }
+            }
+
+            if (this.value.y != bindValue.y) {
+                // the binding variable.y changed - update this.value.y
+                if (bindValue.y < this.minValue.y) {
+                    this.value.y = this.minValue.y;
+                }
+                else if (bindValue.y > this.maxValue.y) {
+                    this.value.y = this.maxValue.y;
+                }
+                else {
+                    this.value.y = bindValue.y;
+                }
+            }
+        }
+        
+        if (this.mouseOver() || this.knobVar.mouseOver()) {
+            cursor("pointer")
+            this.displayState = "hover"
+            if (this.editing) {
+                this.displayState = "pressed"
+            }
+            doHotMouseDown = false;
+            doHotMouseUp = false;
+        }
+        else {
+            if (this.displayState == "hover" || this.displayState == "pressed") {
+                doHotMouseDown = true;
+                doHotMouseUp = true;
+            }
+            this.displayState = "default"
+        }
+    }
+
+    render(x, y) {
+        this.x = x;
+        this.y = y;
+
+        if (this.hiddenVar == false) {
+            if (this.lockedVar == false) {
+                this.update()
+                if (this.editing) {
+                    if (this.centeredVar) {
+                        this.set({
+                            x: Math.round((mouseX-this.editingCursorOffset.x-this.x+this.width/2)/this.width*(this.maxValue.x-this.minValue.x)+this.minValue.x),
+                            y: Math.round((mouseY-this.editingCursorOffset.y-this.y+this.height/2)/this.height*(this.maxValue.y-this.minValue.y)+this.minValue.y),
+                        })
+                    }
+                    else {
+                        this.set({
+                            x: Math.round((mouseX-this.editingCursorOffset.x-this.x)/this.width*(this.maxValue.x-this.minValue.x)+this.minValue.x),
+                            y: Math.round((mouseY-this.editingCursorOffset.y-this.y)/this.height*(this.maxValue.y-this.minValue.y)+this.minValue.y),
+                        })
+                    }
+                }
+            }
+            
+            push()
+            if (this.centeredVar) translate(-this.width/2, -this.height/2)
+            // Background
+            fill(this.backgroundVar)
+            stroke(this.borderVar)
+            strokeWeight(this.borderWeightVar)
+            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+            pop()
+            
+            if (this.centeredVar) {
+                this.knobVar.render((this.value.x-this.minValue.x)/(this.maxValue.x-this.minValue.x)*this.width+this.x-this.width/2, (this.value.y-this.minValue.y)/(this.maxValue.y-this.minValue.y)*this.height+this.y-this.height/2)
+            }
+            else {
+                this.knobVar.render((this.value.x-this.minValue.x)/(this.maxValue.x-this.minValue.x)*this.width+this.x, (this.value.y-this.minValue.y)/(this.maxValue.y-this.minValue.y)*this.height+this.y)
+            }
+        }
+    }
+
+    set(value) {
+        // x
+        if (value.x < this.minValue.x) {
+            this.value.x = this.minValue.x;
+        }
+        else if (value.x > this.maxValue.x) {
+            this.value.x = this.maxValue.x;
+        }
+        else {
+            this.value.x = value.x;
+        }
+
+        // y
+        if (value.y < this.minValue.y) {
+            this.value.y = this.minValue.y;
+        }
+        else if (value.y > this.maxValue.y) {
+            this.value.y = this.maxValue.y;
+        }
+        else {
+            this.value.y = value.y;
+        }
+
+        if (this.binding != "") eval(`${this.binding} = this.value`)
+        return this;
+    }
+
+    bind(target) {
+        this.binding = target;
+        return this;
+    }
+
+    min(value) {
+        this.minValue = value;
+        return this;
+    }
+    max(value) {
+        this.maxValue = value;
+        return this;
+    }
+
+    align(value) {
+        if (value != "leading" && value != "center" && value != "trailing") {
+            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+            return this;
+        }
+        this.alignment = value;
+        return this;
+    }
+
+    hidden(value) {
+        this.hiddenVar = value;
+        return this;
+    }
+    phantom(value) {
+        this.phantomVar = value;
+        return this;
+    }
+
+    centered(value=true) {
+        this.centeredVar = value;
+        return this;
+    }
+
+    locked(value=true) {
+        this.lockedVar = value;
+        return this;
+    }
+
+    onMousePressed() {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.knobVar.mouseOver()) {
+                this.editingCursorOffset = {x: mouseX-this.knobVar.x, y: mouseY-this.knobVar.y};
+                this.editing = true;
+            }
+            else if (this.mouseOver()) {
+                this.editing = true;
+            }
+            if (this.knobVar.clickable) this.knobVar.onMousePressed()
+        }
+    }
+
+    onMouseReleased() {
+        this.editing = false;
+        this.editingCursorOffset = {x: 0, y: 0};
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.knobVar.clickable) this.knobVar.onMouseReleased()
+        }
+    }
+
+    onKeyPressed() {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.knobVar.typeable) this.knobVar.onKeyPressed()
+        }
+    }
+
+    mouseOver() {
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
+        return false;
+    }
+
+    setWidth(value) {
+        this.width = value;
+        return this;
+    }
+
+    setHeight(value) {
+        this.height = value;
+        return this;
+    }
+
+    background(colour) {
+        this.backgroundVar = colour;
+        return this;
+    }
+    border(colour) {
+        this.borderVar = colour;
+        return this;
+    }
+    borderWeight(value) {
+        this.borderWeightVar = value;
+        return this;
+    }
+    cornerRadius(tl=this.height, tr, br, bl) {
+        if (tr == undefined && br == undefined && bl == undefined) {
+            // r1 applies to all corners
+            this.cornerRadiusVar = [tl, tl, tl, tl];
+        }
+        else {
+            // each one individually applies to their own corner with tl as top-left and tr as top-right etc
+            this.cornerRadiusVar = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
+        }
+        return this;
+    }
+
+    knob(elem) {
+        this.knobVar = elem;
+        return this;
     }
 }class Stack {
     constructor() {
@@ -1184,6 +1586,8 @@ class VSlider extends Slider {
         this.alignment = "leading";
         this.hiddenVar = false;
         this.phantomVar = false;
+
+        this.centeredVar = false;
 
         this.backgroundVar = Color.transparent;
         this.borderVar = Color.transparent;
@@ -1217,6 +1621,11 @@ class VSlider extends Slider {
     }
     phantom(value) {
         this.phantomVar = value;
+        return this;
+    }
+
+    centered(value=true) {
+        this.centeredVar = value;
         return this;
     }
 
@@ -1270,6 +1679,16 @@ class VSlider extends Slider {
             }
         }
     }
+
+    mouseOver() {
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
+        return false;
+    }
 }
 
 class VStack extends Stack {
@@ -1301,11 +1720,11 @@ class VStack extends Stack {
 
         if (this.hiddenVar == false) {
             push()
+            if (this.centeredVar) translate(-this.width/2, -this.height/2)
             fill(this.backgroundVar)
             stroke(this.borderVar)
             strokeWeight(this.borderWeightVar)
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-            pop()
             let ySweep = 0;
             for (let n = 0; n < this.contents.length; n++) {
                 let elem = this.contents[n]
@@ -1324,6 +1743,7 @@ class VStack extends Stack {
                     ySweep += elem.height + this.spacingVar;
                 }
             }
+            pop()
         }
     }
 }
@@ -1357,11 +1777,11 @@ class HStack extends Stack {
 
         if (this.hiddenVar == false) {
             push()
+            if (this.centeredVar) translate(-this.width/2, -this.height/2)
             fill(this.backgroundVar)
             stroke(this.borderVar)
             strokeWeight(this.borderWeightVar)
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-            pop()
             let xSweep = 0;
             for (let n = 0; n < this.contents.length; n++) {
                 let elem = this.contents[n]
@@ -1380,6 +1800,7 @@ class HStack extends Stack {
                     xSweep += this.contents[n].width + this.spacingVar;
                 }
             }
+            pop()
         }
     }
 }class Text {
@@ -1402,6 +1823,8 @@ class HStack extends Stack {
         this.phantomVar = false;
 
         this.binding = "";
+
+        this.centeredVar = false;
 
         // Default styling config
         this.backgroundVar = Color.transparent;
@@ -1440,12 +1863,19 @@ class HStack extends Stack {
         return this;
     }
 
+    centered(value=true) {
+        this.centeredVar = value;
+        return this;
+    }
+
     render(x, y) {
-        push();
         this.x = x;
         this.y = y;
-
         if (this.binding != "") this.t = `${eval(this.binding)}`
+
+        push();
+        if (this.centeredVar) translate(-this.width/2, -this.height/2)
+
         textSize(this.tSize)
         if (this.emphasisVar) textStyle(this.emphasisVar)
         if (this.fontVar) textFont(this.fontVar)
@@ -1473,6 +1903,16 @@ class HStack extends Stack {
             }
         }
         pop();
+    }
+
+    mouseOver() {
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
+        return false;
     }
 
     background(colour) {
@@ -1585,6 +2025,8 @@ class Label extends Text {
 
         this.hovering = false;
 
+        this.centeredVar = false;
+
         this.showingCursor = false;
         this.lastToggledCursor = new Date();
         this.cursorColourVar = Color.accent;
@@ -1610,6 +2052,7 @@ class Label extends Text {
         }
         
         push()
+        if (this.centeredVar) translate(-this.width/2, -this.height/2)
         
         textSize(this.tSize)
         if (this.emphasisVar) textStyle(this.emphasisVar)
@@ -1873,7 +2316,12 @@ class Label extends Text {
     }
 
     mouseOver() {
-        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
         return false;
     }
 
@@ -1914,13 +2362,15 @@ class Label extends Text {
         this.hiddenVar = false;
         this.phantomVar = false;
 
-        this.displayState = "default off";
-        this.on = false;
         this.binding = "";
         this.radioName = "";
         this.radioBinding = "";
-
+        
         this.popupVar;
+        
+        this.centeredVar = false;
+        this.displayState = "default off";
+        this.on = false;
 
         this.cornerRadiusVar;
         this.backgroundVar = {"default on": Color.accent, "default off": Color.secondary, "hover on": Color.accent, "hover off": Color.secondary, "pressed on": Color.brighter(Color.accent), "pressed off": Color.brighter(Color.secondary)};
@@ -2009,12 +2459,20 @@ class Label extends Text {
         return this;
     }
 
+    centered(value=true) {
+        this.centeredVar = value;
+        return this;
+    }
+
     onKeyPressed() {
         if (this.hiddenVar == false && this.phantomVar == false) {
             if (this.popupVar && this.on) {
                 if (this.popupVar.typeable) {
                     this.popupVar.onKeyPressed()
                 }
+            }
+            if (this.knobVar) {
+                if (this.knobVar.clickable) this.knobVar.onKeyPressed()
             }
         }
     }
@@ -2025,6 +2483,9 @@ class Label extends Text {
                 if (this.popupVar.clickable) {
                     this.popupVar.onMousePressed()
                 }
+            }
+            if (this.knobVar) {
+                if (this.knobVar.clickable) this.knobVar.onMousePressed()
             }
         }
     }
@@ -2041,11 +2502,19 @@ class Label extends Text {
                     this.popupVar.onMouseReleased()
                 }
             }
+            if (this.knobVar) {
+                if (this.knobVar.clickable) this.knobVar.onMouseReleased()
+            }
         }
     }
 
     mouseOver() {
-        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        if (this.centeredVar) {
+            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        }
+        else {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
         return false;
     }
 
@@ -2215,12 +2684,12 @@ class SlideToggle extends Toggle {
             this.update()
             
             push()
+            if (this.centeredVar) translate(-this.width/2, -this.height/2)
             // Background
             fill(this.backgroundVar[this.displayState])
             stroke(this.borderVar[this.displayState])
             strokeWeight(this.borderWeightVar[this.displayState])
             rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
-            pop()
 
             // Knob
             this.knobVar[this.displayState].setWidth(this.height-4)
@@ -2251,6 +2720,7 @@ class SlideToggle extends Toggle {
                         break;
                 }
             }
+            pop()
         }
     }
 
@@ -2295,6 +2765,7 @@ class CheckToggle extends Toggle {
             this.update()
 
             push()
+            if (this.centeredVar) translate(-this.width/2, -this.height/2)
             // Background
             fill(this.backgroundVar[this.displayState])
             stroke(this.borderVar[this.displayState])
@@ -2309,7 +2780,6 @@ class CheckToggle extends Toggle {
                     this.contents[this.displayState].render(0, 0)
                 }
             }
-            pop()
 
             if (this.popupVar && this.on) {
                 switch (this.popupVar.side) {
@@ -2330,6 +2800,7 @@ class CheckToggle extends Toggle {
                         break;
                 }
             }
+            pop()
         }
     }
 
