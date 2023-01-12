@@ -1,3 +1,4 @@
+let p = new p5()
 class Blank {
     constructor(width=0, height=0) {
         this.x;
@@ -9,16 +10,23 @@ class Blank {
 
         this.clickable = false;
         this.typeable = false;
+        this.scrollable = false;
         this.alignment = "leading";
         this.phantomVar = false;
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
     }
 
-    phantom(value) {
+    phantom(value=true) {
         this.phantomVar = value;
         return this;
     }
@@ -38,12 +46,7 @@ class Blank {
     }
 
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
-        }
-        else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
-        }
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
     }
 }class Block {
@@ -55,6 +58,7 @@ class Blank {
 
         this.clickable = false;
         this.typeable = false;
+        this.scrollable = false;
         this.alignment = "leading";
         this.phantomVar = false;
         this.hiddenVar = false;
@@ -67,54 +71,83 @@ class Blank {
         this.cornerRadiusVar = [10, 10, 10, 10]
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
 
         if (this.hiddenVar == false) {
-            push()
-            if (this.centeredVar) translate(-this.width/2, -this.height/2)
-            fill(this.backgroundVar)
-            stroke(this.borderVar)
-            strokeWeight(this.borderWeightVar)
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-            pop()
+            if (context) {
+                // Render on to specified context
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(x, y, this.width, this.height, context)
+                    context.noFill()
+                }
+                else {
+                    context.fill(this.backgroundVar)
+                }
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                context.pop()
+            }
+            else {
+                // Render directly on to main canvas
+                push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(this.x, this.y, this.width, this.height)
+                    noFill()
+                }
+                else {
+                    fill(this.backgroundVar)
+                }
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                pop()
+            }
         }
     }
 
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
-        }
-        else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
-        }
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
     }
 
     setWidth(value) {
         this.width = value;
+        if (this.backgroundIsImage) this.context = createGraphics(this.width, this.height)
         return this;
     }
     setHeight(value) {
         this.height = value;
+        if (this.backgroundIsImage) this.context = createGraphics(this.width, this.height)
         return this;
     }
 
     align(value) {
-        if (value != "leading" && value != "center" && value != "trailing") {
-            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
-            return this;
+        if (value == "leading" || value == "center" || value == "trailing") {
+            this.alignment = value;
         }
-        this.alignment = value;
+        else {
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+        }
         return this;
     }
 
-    hidden(value) {
+    hidden(value=true) {
         this.hiddenVar = value;
         return this;
     }
-    phantom(value) {
+    phantom(value=true) {
         this.phantomVar = value;
         return this;
     }
@@ -124,8 +157,8 @@ class Blank {
         return this;
     }
 
-    background(colour) {
-        this.backgroundVar = colour;
+    background(input) {
+        this.backgroundVar = input;
         return this;
     }
     border(colour) {
@@ -148,19 +181,23 @@ class Blank {
         return this;
     }
 }class Button {
-    constructor (width=80, height=25) {
+    constructor(width=80, height=25) {
         this.x;
         this.y;
         this.width = width;
         this.height = height;
 
-        this.typeable = false;
         this.clickable = true;
+        this.typeable = false;
+        this.scrollable = false;
         this.alignment = "center";
         this.hiddenVar = false;
         this.phantomVar = false;
 
+        this.popupVar;
+
         this.centeredVar = false;
+        this.lockedVar = false;
         this.displayState = "default";
         this.commandVar = () => {};
 
@@ -171,70 +208,151 @@ class Blank {
 
         this.contents = {"default": undefined, "hover": undefined, "pressed": undefined,};
         this.padFactor = {"default": 0.8, "hover": 0.8, "pressed": 0.8};
+
+        this.popupID = "";
+        this.canSelect = true;
+    }
+    
+    pipe(popupID, canSelect) {
+        if (popupID !== undefined) this.popupID = popupID;
+        if (canSelect !== undefined) this.canSelect = canSelect;
+        if (this.contents[this.displayState]) if (this.contents[this.displayState].clickable) this.contents[this.displayState].pipe(popupID, canSelect)
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
 
         if (this.hiddenVar == false) {
-            if (this.mouseOver()) {
-                cursor("pointer")
-                this.displayState = `hover`
-                if (mouseIsPressed) {
-                    this.displayState = `pressed`
+            if (this.lockedVar == false) {
+                if (this.mouseOver() && this.canSelect) {
+                    if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                        cursor("pointer")
+                        this.displayState = `hover`
+                        if (mouseIsPressed) {
+                            this.displayState = `pressed`
+                        }
+                        doHotMouseDown = false;
+                        doHotMouseUp = false;
+                    }
                 }
-                doHotMouseDown = false;
-                doHotMouseUp = false;
+                else {
+                    if (this.displayState == "hover" || this.displayState == "pressed") {
+                        doHotMouseDown = true;
+                        doHotMouseUp = true;
+                    }
+                    this.displayState = "default"
+                }
+            }
+            
+            if (context) {
+                // Render on to specified context
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                // Background
+                if (typeof this.backgroundVar[this.displayState] == "function") {
+                    this.backgroundVar[this.displayState](x, y, this.width, this.height, context)
+                    context.noFill()
+                }
+                else {
+                    context.fill(this.backgroundVar[this.displayState])
+                }
+                context.stroke(this.borderVar[this.displayState])
+                context.strokeWeight(this.borderWeightVar[this.displayState])
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
+                
+                if (this.contents[this.displayState]) {
+                    if (this.contents[this.displayState].phantomVar == false) {
+                        let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+                        context.translate(x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
+                        context.scale(scaleFactor)
+                        this.contents[this.displayState].render(0, 0)
+                    }
+                }
+                context.pop()
             }
             else {
-                if (this.displayState == "hover" || this.displayState == "pressed") {
-                    doHotMouseDown = true;
-                    doHotMouseUp = true;
+                // Render directly on to main canvas
+                push()
+                // Background
+                if (typeof this.backgroundVar[this.displayState] == "function") {
+                    this.backgroundVar[this.displayState](this.x, this.y, this.width, this.height)
+                    noFill()
                 }
-                this.displayState = "default"
-            }
-    
-            push()
-            if (this.centeredVar) translate(-this.width/2, -this.height/2)
-            // Background
-            fill(this.backgroundVar[this.displayState])
-            stroke(this.borderVar[this.displayState])
-            strokeWeight(this.borderWeightVar[this.displayState])
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
-            
-            if (this.contents[this.displayState]) {
-                if (this.contents[this.displayState].phantomVar == false) {
-                    let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
-                    translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
-                    scale(scaleFactor)
-                    this.contents[this.displayState].render(0, 0)
+                else {
+                    fill(this.backgroundVar[this.displayState])
                 }
+                stroke(this.borderVar[this.displayState])
+                strokeWeight(this.borderWeightVar[this.displayState])
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
+                
+                if (this.contents[this.displayState]) {
+                    if (this.contents[this.displayState].phantomVar == false) {
+                        let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+                        translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
+                        scale(scaleFactor)
+                        this.contents[this.displayState].render(0, 0)
+                    }
+                }
+                pop()
             }
-            pop()
+        }
+
+        if (this.popupVar) {
+            switch (this.popupVar.side) {
+                case "left":
+                    this.popupVar.x = this.x;
+                    this.popupVar.y = this.y + this.height/2;
+                    break;
+                case "right":
+                    this.popupVar.x = this.x + this.width
+                    this.popupVar.y = this.y + this.height/2
+                    break;
+                case "top":
+                    this.popupVar.x = this.x + this.width/2
+                    this.popupVar.y = this.y
+                    break;
+                case "bottom":
+                    this.popupVar.x = this.x + this.width/2
+                    this.popupVar.y = this.y + this.height
+                    break;
+            }
         }
     }
 
     align(value) {
-        if (value != "leading" && value != "center" && value != "trailing") {
-            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
-            return this;
+        if (value == "leading" || value == "center" || value == "trailing") {
+            this.alignment = value;
         }
-        this.alignment = value;
+        else {
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+        }
         return this;
     }
 
-    hidden(value) {
+    hidden(value=true) {
         this.hiddenVar = value;
         return this;
     }
-    phantom(value) {
+    phantom(value=true) {
         this.phantomVar = value;
         return this;
     }
 
     centered(value=true) {
         this.centeredVar = value;
+        return this;
+    }
+
+    locked(value=true) {
+        this.lockedVar = value;
         return this;
     }
     
@@ -244,26 +362,34 @@ class Blank {
     }
 
     onMousePressed() {
-        // if (this.hiddenVar == false && this.phantomVar == false) {
-            
-        // }
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                if (this.lockedVar == false && this.popupVar) {
+                    if (this.mouseOver() == false && this.canSelect && this.popupVar.mouseOver() == false) {
+                        if (this.popupVar.hiddenVar == false) this.popupVar.hidden(true)
+                    }
+                }
+            }
+        }
     }
 
     onMouseReleased() {
         if (this.hiddenVar == false && this.phantomVar == false) {
-            if (this.mouseOver()) {
-                this.commandVar();
+            if (this.lockedVar == false) {
+                if (this.mouseOver() && this.canSelect) {
+                    if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                        this.commandVar();
+                        if (this.popupVar) {
+                            if (this.popupVar.hiddenVar == true) this.popupVar.hidden(false)
+                        }
+                    }
+                }
             }
         }
     }
 
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
-        }
-        else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
-        }
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
     }
 
@@ -277,6 +403,11 @@ class Blank {
         return this;
     }
 
+    popup(popup) {
+        this.popupVar = popup;
+        return this;
+    }
+
     checkWhen(when, trueFunction, absentFunction, variableIdentifierText) {
         if (when) {
             let whenOptions = ["default", "hover", "pressed"]
@@ -284,7 +415,7 @@ class Blank {
                 trueFunction()
             }
             else {
-                console.error(`Invalid 'when' parameter ${when} for ${variableIdentifierText}. Ensure the input is one of the following: '${whenOptions.join("', '")}'`)
+                logCanvasUIError(`Invalid parameter '${when}' for ${variableIdentifierText}. Ensure the input is one of the following: '${whenOptions.join("', '")}'`)
             }
         }
         else {
@@ -293,13 +424,13 @@ class Blank {
         return this;
     }
 
-    background(colour, when) {
+    background(input, when) {
         this.checkWhen(when, () => {
-            this.backgroundVar[when] = colour;
+            this.backgroundVar[when] = input;
         }, () => {
-            this.backgroundVar["default"] = colour;
-            this.backgroundVar["hover"] = colour;
-            this.backgroundVar["pressed"] = colour;
+            this.backgroundVar["default"] = input;
+            this.backgroundVar["hover"] = input;
+            this.backgroundVar["pressed"] = input;
         }, "button background")
         return this;
     }
@@ -368,11 +499,12 @@ class Blank {
         }, "button paddingFactor")
         return this;
     }
-}let doHotkeys = true;
+}
+let doHotkeys = true;
 let doHotMouseDown = true;
 let doHotMouseUp = true;
 
-let hotkey = {
+const hotkey = {
     dataKey: {},
     dataKeyCode: {},
     dataMouseDown: {},
@@ -420,13 +552,17 @@ class Icon {
         this.x;
         this.y;
         // Interpret dimensions
-        this.width = parseFloat(this.svg.split('width="')[1].split('"')[0]);
-        this.height = parseFloat(this.svg.split('height="')[1].split('"')[0]);
+        this.rawWidth = parseFloat(this.svg.split('width="')[1].split('"')[0]);
+        this.rawHeight = parseFloat(this.svg.split('height="')[1].split('"')[0]);
+        this.width = this.rawWidth;
+        this.height = this.rawHeight;
+        this.scaleFactor = 1;
         this.flipHorizontallyVar = false;
         this.flipVerticallyVar = false;
 
-        this.typeable = false;
         this.clickable = false;
+        this.typeable = false;
+        this.scrollable = false;
         this.alignment = "center";
         this.hiddenVar = false;
         this.phantomVar = false;
@@ -582,28 +718,69 @@ class Icon {
         return command;
     }
 
-    render(x, y, scaleFactor=1) {
-        this.x = x;
-        this.y = y;
-        if (this.hiddenVar == false) {
-            push()
-            scale(scaleFactor)
-            if (this.centeredVar) translate(-this.width/2, -this.height/2)
-            translate(x, y)
-            fill(this.fillColourVar)
-            stroke(this.strokeColourVar)
-            eval(this.graphicString)
-            pop()
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
+        if (context) {
+            // Render on to specified context
+            let x = this.x - contextX;
+            let y = this.y - contextY;
+            if (this.hiddenVar == false) {
+                context.push()
+                context.translate(x, y)
+                context.scale(this.scaleFactor)
+                context.fill(this.fillColourVar)
+                context.stroke(this.strokeColourVar)
+                context.strokeWeight(this.strokeWeightVar)
+                let temp = this.graphicString.split(";")
+                temp.pop()
+                temp = temp.join(";context.")
+                temp = "context." + temp;
+                eval(temp)
+                context.pop()
+            }
+        }
+        else {
+            // Render directly on to main canvas
+            if (this.hiddenVar == false) {
+                push()
+                translate(this.x, this.y)
+                scale(this.scaleFactor)
+                fill(this.fillColourVar)
+                stroke(this.strokeColourVar)
+                strokeWeight(this.strokeWeightVar)
+                eval(this.graphicString)
+                pop()
+            }
         }
     }
 
+    scale(value) {
+        this.scaleFactor = value;
+        return this;
+    }
+
+    setWidth(value) {
+        this.scaleFactor = value/this.rawWidth;
+        this.height = this.rawHeight*this.scaleFactor;
+        this.width = value;
+        return this;
+    }
+    setHeight(value) {
+        this.scaleFactor = value/this.rawHeight;
+        this.width = this.rawWidth*this.scaleFactor;
+        this.height = value;
+        return this;
+    }
+
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
-        }
-        else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
-        }
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
     }
 
@@ -612,16 +789,16 @@ class Icon {
             this.alignment = value;
         }
         else {
-            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
         }
         return this;
     }
 
-    hidden(value) {
+    hidden(value=true) {
         this.hiddenVar = value;
         return this;
     }
-    phantom(value) {
+    phantom(value=true) {
         this.phantomVar = value;
         return this;
     }
@@ -631,11 +808,11 @@ class Icon {
         return this;
     }
 
-    fillColour(colour) {
+    fill(colour) {
         this.fillColourVar = colour;
         return this;
     }
-    strokeColour(colour) {
+    stroke(colour) {
         this.strokeColourVar = colour;
         return this;
     }
@@ -644,17 +821,252 @@ class Icon {
         return this;
     }
 
-    flipHorizontally() {
-        this.flipHorizontallyVar = true;
+    flipHorizontally(value=true) {
+        this.flipHorizontallyVar = value;
         this.generateGraphicString()
         return this;
     }
 
-    flipVertically() {
-        this.flipVerticallyVar = true;
+    flipVertically(value=true) {
+        this.flipVerticallyVar = value;
         this.generateGraphicString()
         return this;
     }
+}class ImageView {
+    constructor(path, width=100, height=100) {
+        this.x;
+        this.y;
+
+        this.clickable = false;
+        this.typeable = false;
+        this.scrollable = false;
+        this.alignment = "leading";
+        this.phantomVar = false;
+        this.hiddenVar = false;
+
+        this.centeredVar = false;
+
+        this.binding = "";
+        this.value = {x: 0, y: 0};
+
+        this.width = width;
+        this.height = height;
+        p.loadImage(path, img => {
+            this.contents = img;
+            this.context = p.createGraphics(this.width, this.height)
+        })
+
+        this.borderVar = Color.transparent;
+        this.borderWeightVar = 1;
+        this.cornerRadiusVar = [10, 10, 10, 10]
+    }
+
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
+
+        if (this.hiddenVar == false) {
+            if (this.binding != "") {
+                if (this.value.x != eval(this.binding).x) {
+                    this.value.x = eval(this.binding).x
+                }
+                if (this.value.y != eval(this.binding).y) {
+                    this.value.y = eval(this.binding).y
+                }
+            }
+
+            if (context) {
+                // Render directly on to main canvas
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                if (this.contents) {
+                    this.context.clear()
+                    if (this.preserveAspectRatioVar) {
+                        if (this.width > this.height) {
+                            // Align size with width
+                            this.context.image(this.contents, this.value.x, this.value.y, this.width, this.width/this.contents.width*this.contents.height)
+                        }
+                        else {
+                            // Align size with height
+                            this.context.image(this.contents, this.value.x, this.value.y, this.height/this.contents.height*this.contents.width, this.height)
+                        }
+                    }
+                    else {
+                        this.context.image(this.contents, this.value.x, this.value.y, this.width, this.height)
+                    }
+                    this.roundContextCorners()
+                    context.image(this.context, x, y, this.width, this.height)
+                }
+                
+                context.noFill()
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                context.pop()
+            }
+            else {
+                // Render directly on to main canvas
+                push()
+                if (this.contents) {
+                    this.context.clear()
+                    if (this.preserveAspectRatioVar) {
+                        if (this.width > this.height) {
+                            // Align size with width
+                            this.context.image(this.contents, this.value.x, this.value.y, this.width, this.width/this.contents.width*this.contents.height)
+                        }
+                        else {
+                            // Align size with height
+                            console.log(this.value.x, this.value.y)
+                            this.context.image(this.contents, this.value.x, this.value.y, this.height/this.contents.height*this.contents.width, this.height)
+                        }
+                    }
+                    else {
+                        console.log(this.value.x, this.value.y)
+                        this.context.image(this.contents, this.value.x, this.value.y, this.width, this.height)
+                    }
+                    this.roundContextCorners()
+                    image(this.context, this.x, this.y, this.width, this.height)
+                }
+                
+                noFill()
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                pop()
+            }
+        }
+    }
+
+    bind(target) {
+        this.binding = target;
+        return this;
+    }
+
+    set({x, y}) {
+        if (x !== undefined) this.value.x = x;
+        if (y !== undefined) this.value.y = y;
+        if (this.binding != "") eval(`${this.binding} = this.value`)
+        return this;
+    }
+
+    mouseOver() {
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        return false;
+    }
+
+    setWidth(value) {
+        this.width = value;
+        this.context.width = this.width;
+        return this;
+    }
+    setHeight(value) {
+        this.height = value;
+        this.context.height = this.height;
+        return this;
+    }
+    preserveAspectRatio(value=true) {
+        this.preserveAspectRatioVar = value;
+        return this;
+    }
+
+    align(value) {
+        if (value == "leading" || value == "center" || value == "trailing") {
+            this.alignment = value;
+        }
+        else {
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+        }
+        return this;
+    }
+
+    hidden(value=true) {
+        this.hiddenVar = value;
+        return this;
+    }
+    phantom(value=true) {
+        this.phantomVar = value;
+        return this;
+    }
+
+    centered(value=true) {
+        this.centeredVar = value;
+        return this;
+    }
+
+    roundContextCorners() {
+        this.context.loadPixels()
+        if (this.cornerRadiusVar[0] == this.cornerRadiusVar[1] && this.cornerRadiusVar[1] == this.cornerRadiusVar[2] && this.cornerRadiusVar[2] == this.cornerRadiusVar[3]) {
+            for (let row=0.5; row < this.cornerRadiusVar[0]; row++) {
+                for (let col=0.5; col < this.cornerRadiusVar[0]; col++) {
+                    if ((row-this.cornerRadiusVar[0])**2 + (col-this.cornerRadiusVar[0])**2 > (this.cornerRadiusVar[0]-1)**2) {
+                        this.context.set(col-0.5, row-0.5, Color.transparent)
+                        this.context.set(this.width-(col-0.5), row-0.5, Color.transparent)
+                        this.context.set(this.width-(col-0.5), this.height-(row-0.5), Color.transparent)
+                        this.context.set(col-0.5, this.height-(row-0.5), Color.transparent)
+                    }
+                }
+            }
+        }
+        else {
+            for (let row=0.5; row < this.cornerRadiusVar[0]; row++) {
+                for (let col=0.5; col < this.cornerRadiusVar[0]; col++) {
+                    if ((row-this.cornerRadiusVar[0])**2 + (col-this.cornerRadiusVar[0])**2 > (this.cornerRadiusVar[0]-1)**2) {
+                        this.context.set(col-0.5, row-0.5, Color.transparent)
+                    }
+                }
+            }
+            for (let row=0.5; row < this.cornerRadiusVar[1]; row++) {
+                for (let col=0.5; col < this.cornerRadiusVar[1]; col++) {
+                    if ((row-this.cornerRadiusVar[1])**2 + (col-this.cornerRadiusVar[1])**2 > (this.cornerRadiusVar[1]-1)**2) {
+                        this.context.set(this.width-(col-0.5), row-0.5, Color.transparent)
+                    }
+                }
+            }
+            for (let row=0.5; row < this.cornerRadiusVar[2]; row++) {
+                for (let col=0.5; col < this.cornerRadiusVar[2]; col++) {
+                    if ((row-this.cornerRadiusVar[2])**2 + (col-this.cornerRadiusVar[2])**2 > (this.cornerRadiusVar[2]-1)**2) {
+                        this.context.set(this.width-(col-0.5), this.height-(row-0.5), Color.transparent)
+                    }
+                }
+            }
+            for (let row=0.5; row < this.cornerRadiusVar[3]; row++) {
+                for (let col=0.5; col < this.cornerRadiusVar[3]; col++) {
+                    if ((row-this.cornerRadiusVar[3])**2 + (col-this.cornerRadiusVar[3])**2 > (this.cornerRadiusVar[3]-1)**2) {
+                        this.context.set(col-0.5, this.height-(row-0.5), Color.transparent)
+                    }
+                }
+            }
+        }
+        this.context.updatePixels()
+    }
+
+    border(colour) {
+        this.borderVar = colour;
+        return this;
+    }
+    borderWeight(value) {
+        this.borderWeightVar = value;
+        return this;
+    }
+    cornerRadius(tl, tr, br, bl) {
+        if (tr == undefined && br == undefined && bl == undefined) {
+            // r1 applies to all corners
+            this.cornerRadiusVar = [tl, tl, tl, tl];
+        }
+        else {
+            // each one individually applies to their own corner with r1 starting at top-left and successive rs moving clockwise around the shape
+            this.cornerRadiusVar = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
+        }
+        return this;
+    }
+
 }class Panel {
     constructor() {
         this.x;
@@ -663,9 +1075,14 @@ class Icon {
         this.height = 0;
         this.contents = [];
         this.pad = 15;
+
+        this.minWidthVar = 3*this.pad;
+        this.minHeightVar = 2*this.pad;
+        this.spacingVar = 7.5;
         
         this.clickable = true;
         this.typeable = true;
+        this.scrollable = true;
         this.alignment = "leading"
         this.hiddenVar = false;
         this.phantomVar = false;
@@ -676,82 +1093,165 @@ class Icon {
         this.borderVar = Color.transparent;
         this.borderWeightVar = 1;
         this.cornerRadiusVar = [0, 0, 0, 0];
+
+        this.popupID = "";
+        this.canSelect = true;
+    }
+
+    pipe(popupID, canSelect) {
+        if (popupID !== undefined) this.popupID = popupID;
+        if (canSelect !== undefined) this.canSelect = canSelect;
+        for (let n = 0; n < this.contents.length; n++) {
+            if (this.contents[n].clickable) this.contents[n].pipe(popupID, canSelect)
+        }
     }
 
     calcDimensions() {
-        this.width = 0;
-        this.height = this.pad;
+        this.width = 3*this.pad;
+        this.height = 2*this.pad;
         for (let n = 0; n < this.contents.length; n++) {
             let elem = this.contents[n]
             if (elem.phantomVar == false) {
                 this.width = Math.max(this.width, elem.width + 3*this.pad);
                 this.height += elem.height;
                 if (elem.constructor.name == "Label") {
-                    this.height += this.pad/4
+                    this.height += this.spacingVar/2
                 }
                 else {
-                    this.height += this.pad/2
+                    if (n != this.contents.length-1) this.height += this.spacingVar
                     if (elem.constructor.name == "Title") {
-                        if (n != 0) this.height += this.pad/2
+                        if (n != 0) this.height += this.spacingVar
                     }
                 }
             }
         }
-        this.height += this.pad/2
+
+        this.width = Math.max(this.width, this.minWidthVar)
+        this.height = Math.max(this.height, this.minHeightVar)
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
         this.calcDimensions()
 
         if (this.hiddenVar == false) {
-            push()
-            if (this.centeredVar) translate(-this.width/2, -this.height/2)
-            fill(this.backgroundVar)
-            stroke(this.borderVar)
-            strokeWeight(this.borderWeightVar)
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-            let ySweep = this.pad;
-            for (let n = 0; n < this.contents.length; n++) {
-                const elem = this.contents[n]
-                if (elem.phantomVar == false) {
-                    switch (elem.alignment) {
-                        case "leading":
-                            if (elem.constructor.name == "Title") {
-                                if (n != 0) ySweep += this.pad/2
-                                elem.render(this.x + this.pad, this.y + ySweep);
-                            }
-                            else {
-                                elem.render(this.x + 1.5*this.pad, this.y + ySweep);
-                            }
-                            break;
-                        case "center":
-                            if (elem.constructor.name == "Title") {
-                                if (n != 0) ySweep += this.pad/2
-                            }
-                            elem.render(this.x + (this.width - elem.width)/2, this.y + ySweep);
-                            break;
-                        case "trailing":
-                            if (elem.constructor.name == "Title") {
-                                if (n != 0) ySweep += this.pad/2
-                                elem.render(this.x + this.width - elem.width - this.pad, this.y + ySweep);
-                            }
-                            else{
-                                elem.render(this.x + this.width - elem.width - 1.5*this.pad, this.y + ySweep);
-                            }
-                            break;
-                    }
-                    
-                    if (elem.constructor.name == "Label") {
-                        ySweep += elem.height + this.pad/4;
-                    }
-                    else {
-                        ySweep += elem.height + this.pad/2;
+            if (context) {
+                // Render on to specified context
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(x, y, this.width, this.height, context)
+                    context.noFill()
+                }
+                else {
+                    context.fill(this.backgroundVar)
+                }
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                context.pop()
+                let ySweep = this.pad;
+                for (let n = 0; n < this.contents.length; n++) {
+                    const elem = this.contents[n]
+                    if (elem.phantomVar == false) {
+                        switch (elem.alignment) {
+                            case "leading":
+                                if (elem.constructor.name == "Title") {
+                                    if (n != 0) ySweep += this.spacingVar
+                                    elem.render(this.x + this.pad, this.y + ySweep, context, contextX, contextY);
+                                }
+                                else {
+                                    elem.render(this.x + 1.5*this.pad, this.y + ySweep, context, contextX, contextY);
+                                }
+                                break;
+                            case "center":
+                                if (elem.constructor.name == "Title") {
+                                    if (n != 0) ySweep += this.spacingVar
+                                }
+                                elem.render(this.x + (this.width - elem.width)/2, this.y + ySweep, context, contextX, contextY);
+                                break;
+                            case "trailing":
+                                if (elem.constructor.name == "Title") {
+                                    if (n != 0) ySweep += this.spacingVar
+                                    elem.render(this.x + this.width - elem.width - this.pad, this.y + ySweep, context, contextX, contextY);
+                                }
+                                else{
+                                    elem.render(this.x + this.width - elem.width - 1.5*this.pad, this.y + ySweep, context, contextX, contextY);
+                                }
+                                break;
+                        }
+                        
+                        if (elem.constructor.name == "Label") {
+                            ySweep += elem.height + this.spacingVar/2;
+                        }
+                        else {
+                            ySweep += elem.height + this.spacingVar;
+                        }
                     }
                 }
             }
-            pop()
+            else {
+                // Render directly on to main canvas
+                push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(this.x, this.y, this.width, this.height)
+                    noFill()
+                }
+                else {
+                    fill(this.backgroundVar)
+                }
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                pop()
+                let ySweep = this.pad;
+                for (let n = 0; n < this.contents.length; n++) {
+                    const elem = this.contents[n]
+                    if (elem.phantomVar == false) {
+                        switch (elem.alignment) {
+                            case "leading":
+                                if (elem.constructor.name == "Title") {
+                                    if (n != 0) ySweep += this.spacingVar
+                                    elem.render(this.x + this.pad, this.y + ySweep);
+                                }
+                                else {
+                                    elem.render(this.x + 1.5*this.pad, this.y + ySweep);
+                                }
+                                break;
+                            case "center":
+                                if (elem.constructor.name == "Title") {
+                                    if (n != 0) ySweep += this.spacingVar
+                                }
+                                elem.render(this.x + (this.width - elem.width)/2, this.y + ySweep);
+                                break;
+                            case "trailing":
+                                if (elem.constructor.name == "Title") {
+                                    if (n != 0) ySweep += this.spacingVar
+                                    elem.render(this.x + this.width - elem.width - this.pad, this.y + ySweep);
+                                }
+                                else{
+                                    elem.render(this.x + this.width - elem.width - 1.5*this.pad, this.y + ySweep);
+                                }
+                                break;
+                        }
+                        
+                        if (elem.constructor.name == "Label") {
+                            ySweep += elem.height + this.spacingVar/2;
+                        }
+                        else {
+                            ySweep += elem.height + this.spacingVar;
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -784,13 +1284,16 @@ class Icon {
         }
     }
 
+    onMouseWheel(event) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            for (let n = 0; n < this.contents.length; n++) {
+                if (this.contents[n].scrollable) this.contents[n].onMouseWheel(event)
+            }
+        }
+    }
+
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
-        }
-        else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
-        }
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
     }
 
@@ -799,15 +1302,34 @@ class Icon {
         return this;
     }
 
-    align(alignment) {
-        this.alignment = alignment
+    minWidth(value) {
+        this.minWidthVar = value;
+        return this;
+    }
+    minHeight(value) {
+        this.minHeightVar = value;
+        return this;
     }
 
-    hidden(value) {
+    spacing(value) {
+        this.spacingVar = value;
+        return this;
+    }
+
+    align(value) {
+        if (value == "leading" || value == "center" || value == "trailing") {
+            this.alignment = value;
+        }
+        else {
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+        }
+    }
+
+    hidden(value=true) {
         this.hiddenVar = value;
         return this;
     }
-    phantom(value) {
+    phantom(value=true) {
         this.phantomVar = value;
         return this;
     }
@@ -817,13 +1339,13 @@ class Icon {
         return this;
     }
 
-    background(colour) {
-        this.backgroundVar = colour;
+    background(input) {
+        this.backgroundVar = input;
         return this;
     }
 
-    border(value) {
-        this.borderVar = value;
+    border(colour) {
+        this.borderVar = colour;
         return this;
     }
 
@@ -843,18 +1365,48 @@ class Icon {
         }
         return this;
     }
-}class Popup {
+}let popups = {
+    showing: [], 
+    render() {
+        for (let n = 0; n < popups.showing.length; n++) {
+            popups.showing[n].render()
+        }
+    },
+    mouseOver() {
+        for (let n = popups.showing.length-1; n >= 0; n--) {
+            if (popups.showing[n].mouseOver()) {
+                return popups.showing[n].id;
+            }
+        }
+    },
+    onMousePressed() {
+        for (let n = popups.showing.length-1; n >= 0; n--) {
+            popups.showing[n].onMousePressed(popups.showing[n].id)
+        }
+    },
+    onMouseReleased() {
+        for (let n = popups.showing.length-1; n >= 0; n--) {
+            popups.showing[n].onMouseReleased(popups.showing[n].id)
+        }
+    },
+    onKeyPressed() {
+        for (let n = popups.showing.length-1; n >= 0; n--) {
+            popups.showing[n].onKeyPressed(popups.showing[n].id)
+        }
+    },
+}
+
+class Popup {
     constructor(side="right") {
+        this.id = Math.floor(Math.random() * Date.now()).toString(16)
         this.clickable = true;
         this.typeable = true;
-        this.hiddenVar = false;
+        this.scrollable = true;
+        this.hiddenVar = true;
         this.phantomVar = false;
 
         this.side = side; // left, right, top, bottom
         switch (this.side) {
-            case "left":
-                this.offsetVar = {x: -15 , y: 0};
-                break;
             case "right":
                 this.offsetVar = {x: 15 , y: 0};
                 break;
@@ -863,6 +1415,11 @@ class Icon {
                 break;
             case "bottom":
                 this.offsetVar = {x: 0 , y: 15};
+                break;
+            default:
+                logCanvasUIError(`Popup has invalid side: ${this.side}`)
+            case "left":
+                this.offsetVar = {x: -15 , y: 0};
                 break;
         }
         this.contentOffsetVar = {x: this.offsetVar.x/2, y: this.offsetVar.y/2};
@@ -877,66 +1434,71 @@ class Icon {
     }
 
     render(x, y) {
-        this.x = x;
-        this.y = y;
+        if (x !== undefined) this.x = x;
+        if (y !== undefined) this.y = y;
 
-        if (this.hiddenVar == false) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
             if (this.contents) {
-                if (this.side == "left" || this.side == "right") {
-                    // Left or right
-                    if (this.side == "left") {
-                        // Left
-                        this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2)
-                        push();
-                        fill(this.contents.backgroundVar);
-                        stroke(this.contents.borderVar);
-                        strokeWeight(this.contents.borderWeightVar);
-                        triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x - 1, this.y + this.offsetVar.y + this.contentOffsetVar.y-this.beakWidthVar/2, this.x + this.offsetVar.x + this.contentOffsetVar.x - 1, this.y + this.offsetVar.y + this.contentOffsetVar.y+this.beakWidthVar/2);
-                        pop();
-                    }
-                    else {
-                        // Right
-                        this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2)
-                        push();
-                        fill(this.contents.backgroundVar);
-                        stroke(this.contents.borderVar);
-                        strokeWeight(this.contents.borderWeightVar);
-                        triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x + 1, this.y + this.offsetVar.y + this.contentOffsetVar.y-this.beakWidthVar/2, this.x + this.offsetVar.x + this.contentOffsetVar.x + 1, this.y + this.offsetVar.y + this.contentOffsetVar.y+this.beakWidthVar/2);
-                        pop();
-                    }
-                }
-                else {
-                    // Top or bottom
-                    if (this.side == "top") {
-                        // Top
-                        this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height)
-                        push();
-                        fill(this.contents.backgroundVar);
-                        stroke(this.contents.borderVar);
-                        strokeWeight(this.contents.borderWeightVar);
-                        triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x-this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - 1, this.x + this.offsetVar.x + this.contentOffsetVar.x+this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - 1);
-                        pop();
-                    }
-                    else {
-                        // Bottom
-                        this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2, this.y + this.offsetVar.y + this.contentOffsetVar.y)
-                        push();
-                        fill(this.contents.backgroundVar);
-                        stroke(this.contents.borderVar);
-                        strokeWeight(this.contents.borderWeightVar);
-                        triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x-this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y + 1, this.x + this.offsetVar.x + this.contentOffsetVar.x+this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y + 1);
-                        pop();
+                if (this.contents.phantomVar == false) {
+                    if (this.contents.clickable) this.contents.pipe(this.id)
+                    switch (this.side) {
+                        case "left":
+                            this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2)
+                            push();
+                            if (typeof this.contents.backgroundVar != "function") fill(this.contents.backgroundVar);
+                            stroke(this.contents.borderVar);
+                            strokeWeight(this.contents.borderWeightVar);
+                            triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x - 1, this.y + this.offsetVar.y + this.contentOffsetVar.y-this.beakWidthVar/2, this.x + this.offsetVar.x + this.contentOffsetVar.x - 1, this.y + this.offsetVar.y + this.contentOffsetVar.y+this.beakWidthVar/2);
+                            pop();
+                            break;
+                        case "right":
+                            this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2)
+                            push();
+                            if (typeof this.contents.backgroundVar != "function") fill(this.contents.backgroundVar);
+                            stroke(this.contents.borderVar);
+                            strokeWeight(this.contents.borderWeightVar);
+                            triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x + 1, this.y + this.offsetVar.y + this.contentOffsetVar.y-this.beakWidthVar/2, this.x + this.offsetVar.x + this.contentOffsetVar.x + 1, this.y + this.offsetVar.y + this.contentOffsetVar.y+this.beakWidthVar/2);
+                            pop();
+                            break;
+                        case "top":
+                            this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height)
+                            push();
+                            if (typeof this.contents.backgroundVar != "function") fill(this.contents.backgroundVar);
+                            stroke(this.contents.borderVar);
+                            strokeWeight(this.contents.borderWeightVar);
+                            triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x-this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - 1, this.x + this.offsetVar.x + this.contentOffsetVar.x+this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y - 1);
+                            pop();
+                            break;
+                        case "bottom":
+                            this.contents.render(this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2, this.y + this.offsetVar.y + this.contentOffsetVar.y)
+                            push();
+                            if (typeof this.contents.backgroundVar != "function") fill(this.contents.backgroundVar);
+                            stroke(this.contents.borderVar);
+                            strokeWeight(this.contents.borderWeightVar);
+                            triangle(this.x + this.offsetVar.x, this.y + this.offsetVar.y, this.x + this.offsetVar.x + this.contentOffsetVar.x-this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y + 1, this.x + this.offsetVar.x + this.contentOffsetVar.x+this.beakWidthVar/2, this.y + this.offsetVar.y + this.contentOffsetVar.y + 1);
+                            pop();
+                            break;
                     }
                 }
             }
         }
     }
 
-    hidden(value) {
-        this.hiddenVar = value;
+    hidden(value=true) {
+        if (value != this.hiddenVar) {
+            this.hiddenVar = value;
+            if (value) {
+                popups.showing = popups.showing.filter( p => {
+                    return p.id !== this.id;
+                });
+            }
+            else {
+                popups.showing.push(this)
+            }
+        }
         return this;
     }
-    phantom(value) {
+    phantom(value=true) {
         this.phantomVar = value;
         return this;
     }
@@ -1006,14 +1568,312 @@ class Icon {
         }
     }
 
+    onMouseWheel(event) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.contents.scrollable) {
+                this.contents.onMouseWheel(event);
+            }
+        }
+    }
+
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
+        let x = -this.width-1;
+        let y = -this.height-1;
+        switch (this.side) {
+            case "left":
+                x = this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width
+                y = this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2
+                break;
+            case "right":
+                x = this.x + this.offsetVar.x + this.contentOffsetVar.x
+                y = this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height/2
+                break;
+            case "top":
+                x = this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2
+                y = this.y + this.offsetVar.y + this.contentOffsetVar.y - this.contents.height
+                break;
+            case "bottom":
+                x = this.x + this.offsetVar.x + this.contentOffsetVar.x - this.contents.width/2
+                y = this.y + this.offsetVar.y + this.contentOffsetVar.y
+                break;
+        }
+
+        if (mouseX >= x && mouseX <= x + this.contents.width && mouseY >= y && mouseY <= y + this.contents.height) return true;
+        return false;
+    }
+}let selectedScrollView = ""
+
+class ScrollView {
+    constructor(width, height) {
+        this.id = Math.floor(Math.random() * Date.now()).toString(16)
+        this.width = width ?? 1;
+        this.widthSet = width === undefined ? false : true;
+        this.height = height ?? 1;
+        this.heightSet = height === undefined ? false : true;
+        this.contents;
+        
+        this.clickable = true;
+        this.typeable = true;
+        this.scrollable = true;
+        this.alignment = "leading";
+        this.hiddenVar = false;
+        this.phantomVar = false;
+
+        this.centeredVar = false;
+
+        this.context = p.createGraphics(this.width, this.height);
+        this.binding = "";
+        this.value = {x: 0, y: 0}
+        this.sensitivityVar = {x: 1, y: 1};
+
+        this.backgroundVar = Color.transparent;
+        this.borderVar = Color.transparent;
+        this.borderWeightVar = 1;
+        this.cornerRadiusVar = [0, 0, 0, 0];
+
+        this.popupID = "";
+        this.canSelect = true;
+    }
+
+    pipe(popupID, canSelect) {
+        if (popupID !== undefined) this.popupID = popupID;
+        if (canSelect !== undefined) this.canSelect = canSelect;
+        if (this.contents) if (this.contents.clickable) this.contents.pipe(popupID, this.mouseOver() && this.canSelect)
+    }
+
+    bind(target) {
+        this.binding = target;
+        return this;
+    }
+
+    sensitivity(value) {
+        if (typeof value == "number") {
+            this.sensitivityVar = {x: value, y: value};
         }
         else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+            this.sensitivityVar.x = value.x;
+            this.sensitivityVar.y = value.y;
         }
+        return this;
+    }
+
+    set({x, y}) {
+        if (x !== undefined) this.value.x = x;
+        if (y !== undefined) this.value.y = y;
+        if (this.binding != "") eval(`${this.binding} = this.value`)
+        return this;
+    }
+
+    contains(elem) {
+        this.contents = elem;
+        return this;
+    }
+
+    align(value) {
+        if (value == "leading" || value == "center" || value == "trailing") {
+            this.alignment = value;
+        }
+        else {
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+        }
+        return this;
+    }
+
+    hidden(value=true) {
+        this.hiddenVar = value;
+        return this;
+    }
+    phantom(value=true) {
+        this.phantomVar = value;
+        return this;
+    }
+
+    centered(value=true) {
+        this.centeredVar = value;
+        return this;
+    }
+
+    background(input) {
+        this.backgroundVar = input;
+        return this;
+    }
+
+    border(colour) {
+        this.borderVar = colour;
+        return this;
+    }
+
+    borderWeight(value) {
+        this.borderWeightVar = value;
+        return this;
+    }
+
+    cornerRadius(tl, tr, br, bl) {
+        if (tr == undefined && br == undefined && bl == undefined) {
+            // r1 applies to all corners
+            this.cornerRadiusVar = [tl, tl, tl, tl];
+        }
+        else {
+            // each one individually applies to their own corner with r1 starting at top-left and successive rs moving clockwise around the shape
+            this.cornerRadiusVar = [tl ?? 0, tr ?? 0, br ?? 0, bl ?? 0];
+        }
+        return this;
+    }
+
+    mouseOver() {
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
+    }
+
+    onKeyPressed() {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.contents.typeable) this.contents.onKeyPressed()
+        }
+    }
+
+    onMousePressed() {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.contents.clickable) this.contents.onMousePressed()
+        }
+    }
+
+    onMouseReleased() {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.contents.clickable) this.contents.onMouseReleased()
+        }
+    }
+
+    onMouseWheel(event) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.mouseOver() && this.canSelect) selectedScrollView = this.id;
+            if (this.contents.scrollable) this.contents.onMouseWheel(event)
+            if (this.mouseOver() && this.canSelect && selectedScrollView == this.id) {
+                let proposedX = 0;
+                let proposedY = 0;
+
+                if (this.widthSet) {
+                    proposedX = this.value.x-event.deltaX*this.sensitivityVar.x;
+                    if (proposedX < this.width-this.contents.width) {
+                        proposedX = this.width-this.contents.width;
+                    }
+                    else if (proposedX > 0) {
+                        proposedX = 0;
+                    }
+                }
+                if (this.heightSet) {
+                    proposedY = this.value.y-event.deltaY*this.sensitivityVar.y;
+                    if (proposedY < this.height-this.contents.height) {
+                        proposedY = this.height-this.contents.height;
+                    }
+                    else if (proposedY > 0) {
+                        proposedY = 0;
+                    }
+                }
+
+                this.set({x: proposedX, y: proposedY})
+            }
+        }
+    }
+
+    setWidth(value) {
+        if (value) {
+            this.width = value;
+            this.widthSet = true;
+            this.context.width = this.width;
+        }
+        else {
+            this.widthSet = false;
+        }
+        return this;
+    }
+    setHeight(value) {
+        if (value) {
+            this.height = value;
+            this.heightSet = true;
+            this.context.height = this.height;
+        }
+        else {
+            this.heightSet = false;
+        }
+        return this;
+    }
+
+    calcDimensions() {
+        if (this.contents) {
+            if (this.widthSet == false && this.width != this.contents.width) {
+                this.width = this.contents.width > 0 ? this.contents.width : 1
+                this.context = createGraphics(this.width, this.height)
+            }
+            if (this.heightSet == false && this.height != this.contents.height) {
+                this.height = this.contents.height > 0 ? this.contents.height : 1
+                this.context = createGraphics(this.width, this.height)
+            }
+        }
+        if (this.context === undefined) this.context = createGraphics(this.width, this.height)
+    }
+
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
+        this.calcDimensions()
+
+        if (this.contents) if (this.contents.clickable) this.contents.pipe(undefined, this.mouseOver() && this.canSelect)
+
+        if (this.hiddenVar == false) {
+            if (this.binding != "") {
+                if (this.value.x != eval(this.binding).x) {
+                    this.value.x = eval(this.binding).x
+                }
+                if (this.value.y != eval(this.binding).y) {
+                    this.value.y = eval(this.binding).y
+                }
+            }
+
+            if (context) {
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(x, y, this.width, this.height, context)
+                    context.noFill()
+                }
+                else {
+                    context.fill(this.backgroundVar)
+                }
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                context.pop()
+
+                this.context.clear()
+                this.contents.render(this.x+this.value.x, this.y+this.value.y, this.context, this.x, this.y)
+                context.image(this.context, x, y)
+            }
+            else {
+                push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(this.x, this.y, this.width, this.height)
+                    noFill()
+                }
+                else {
+                    fill(this.backgroundVar)
+                }
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                pop()
+
+                this.context.clear()
+                this.contents.render(this.x+this.value.x, this.y+this.value.y, this.context, this.x, this.y)
+                image(this.context, this.x, this.y)
+            }
+        }
     }
 }class Slider {
     constructor (width, height) {
@@ -1022,8 +1882,9 @@ class Icon {
         this.width = width;
         this.height = height;
 
-        this.typeable = true;
         this.clickable = true;
+        this.typeable = true;
+        this.scrollable = true;
         this.alignment = "center";
         this.hiddenVar = false;
         this.phantomVar = false;
@@ -1045,6 +1906,15 @@ class Icon {
         this.cornerRadiusVar = [6, 6, 6, 6];
 
         this.knobVar;
+
+        this.popupID = "";
+        this.canSelect = true;
+    }
+
+    pipe(popupID, canSelect) {
+        if (popupID !== undefined) this.popupID = popupID;
+        if (canSelect !== undefined) this.canSelect = canSelect;
+        if (this.knobVar) if (this.knobVar.clickable) this.knobVar.pipe(popupID, canSelect)
     }
 
     update() {
@@ -1063,22 +1933,28 @@ class Icon {
                 }
             }
         }
-        
-        if (this.mouseOver() || this.knobVar.mouseOver()) {
-            cursor("pointer")
-            this.displayState = "hover"
-            if (this.editing) {
-                this.displayState = "pressed"
+
+        if (this.lockedVar == false) {
+            if (this.canSelect) {
+                if (this.mouseOver() || this.knobVar.mouseOver()) {
+                    if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                        cursor("pointer")
+                        this.displayState = "hover"
+                        if (this.editing) {
+                            this.displayState = "pressed"
+                        }
+                        doHotMouseDown = false;
+                        doHotMouseUp = false;
+                    }
+                }
+                else {
+                    if (this.displayState == "hover" || this.displayState == "pressed") {
+                        doHotMouseDown = true;
+                        doHotMouseUp = true;
+                    }
+                    this.displayState = "default"
+                }
             }
-            doHotMouseDown = false;
-            doHotMouseUp = false;
-        }
-        else {
-            if (this.displayState == "hover" || this.displayState == "pressed") {
-                doHotMouseDown = true;
-                doHotMouseUp = true;
-            }
-            this.displayState = "default"
         }
     }
 
@@ -1103,27 +1979,34 @@ class Icon {
 
     min(value) {
         this.minValue = value;
+        if (this.value < this.minValue) {
+            this.value = this.minValue;
+        }
         return this;
     }
     max(value) {
         this.maxValue = value;
+        if (this.value > this.maxValue) {
+            this.value = this.maxValue;
+        }
         return this;
     }
 
     align(value) {
-        if (value != "leading" && value != "center" && value != "trailing") {
-            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
-            return this;
+        if (value == "leading" || value == "center" || value == "trailing") {
+            this.alignment = value;
         }
-        this.alignment = value;
+        else {
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+        }
         return this;
     }
 
-    hidden(value) {
+    hidden(value=true) {
         this.hiddenVar = value;
         return this;
     }
-    phantom(value) {
+    phantom(value=true) {
         this.phantomVar = value;
         return this;
     }
@@ -1140,12 +2023,16 @@ class Icon {
 
     onMousePressed() {
         if (this.hiddenVar == false && this.phantomVar == false) {
-            if (this.knobVar.mouseOver()) {
-                this.calcEditingCursorOffset();
-                this.editing = true;
-            }
-            else if (this.mouseOver()) {
-                this.editing = true;
+            if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                if (this.canSelect) {
+                    if (this.knobVar.mouseOver()) {
+                        this.calcEditingCursorOffset();
+                        this.editing = true;
+                    }
+                    else if (this.mouseOver()) {
+                        this.editing = true;
+                    }
+                }
             }
             if (this.knobVar.clickable) this.knobVar.onMousePressed()
         }
@@ -1165,13 +2052,14 @@ class Icon {
         }
     }
 
+    onMouseWheel(event) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.knobVar.scrollable) this.knobVar.onMouseWheel(event)
+        }
+    }
+
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
-        }
-        else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
-        }
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
     }
 
@@ -1222,50 +2110,65 @@ class HSlider extends Slider {
         this.knobVar = new Block(height*1.8, height*1.8).cornerRadius(height*1.8).centered(true)
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
 
         if (this.hiddenVar == false) {
-            if (this.lockedVar == false) {
-                this.update()
+            this.update()
+            if (this.lockedVar == false && this.editing) {
+                this.set(Math.round((mouseX-this.editingCursorOffset-this.x)/this.width*(this.maxValue-this.minValue)+this.minValue))
+            }
 
-                if (this.editing) {
-                    if (this.centeredVar) {
-                        this.set(Math.round((mouseX-this.editingCursorOffset-this.x+this.width/2)/this.width*(this.maxValue-this.minValue)+this.minValue))
-                    }
-                    else {
-                        this.set(Math.round((mouseX-this.editingCursorOffset-this.x)/this.width*(this.maxValue-this.minValue)+this.minValue))
-                    }
+            if (context) {
+                // Render on to specified context
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                // Background
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(x, y, this.width, this.height, this.value, context)
+                    context.noFill()
                 }
-            }
-
-            push()
-            if (this.centeredVar) translate(-this.width/2, -this.height/2)
-            // Background
-            if (typeof this.backgroundVar == "function") {
-                this.backgroundVar(this.x, this.y, this.width, this.height)
-                noFill()
-            }
-            else {
-                fill(this.backgroundVar)
-            }
-            stroke(this.borderVar)
-            strokeWeight(this.borderWeightVar)
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-            pop()
-            
-            if (this.centeredVar) {
-                this.knobVar.render((this.value-this.minValue)*this.width/(this.maxValue-this.minValue)+this.x-this.width/2, this.y)
+                else {
+                    context.fill(this.backgroundVar)
+                }
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                context.pop()
+                
+                this.knobVar.render((this.value-this.minValue)*this.width/(this.maxValue-this.minValue)+this.x, this.y+this.height/2, context, contextX, contextY)
             }
             else {
+                // Render directly on to main canvas
+                push()
+                // Background
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(this.x, this.y, this.width, this.height, this.value)
+                    noFill()
+                }
+                else {
+                    fill(this.backgroundVar)
+                }
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                pop()
+                
                 this.knobVar.render((this.value-this.minValue)*this.width/(this.maxValue-this.minValue)+this.x, this.y+this.height/2)
             }
         }
     }
 
     calcEditingCursorOffset() {
-        this.editingCursorOffset = mouseX-this.knobVar.x;
+        this.editingCursorOffset = mouseX-((this.value-this.minValue)*this.width/(this.maxValue-this.minValue)+this.x);
     }
 }
 
@@ -1276,60 +2179,76 @@ class VSlider extends Slider {
         this.knobVar = new Block(width*1.8, width*1.8).cornerRadius(width*1.8).centered(true)
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
 
         if (this.hiddenVar == false) {
-            if (this.lockedVar == false) {
-                this.update()
-            
-                if (this.editing) {
-                    if (this.centeredVar) {
-                        this.set(Math.round((this.height/2+this.y-mouseY+this.editingCursorOffset)*(this.maxValue-this.minValue)/this.height + this.minValue))
-                    }
-                    else {
-                        this.set(Math.round((this.height+this.y-mouseY+this.editingCursorOffset)*(this.maxValue-this.minValue)/this.height + this.minValue))
-                    }
-                }
+            this.update()
+            if (this.lockedVar == false && this.editing) {
+                this.set(Math.round((this.height+this.y-mouseY+this.editingCursorOffset)*(this.maxValue-this.minValue)/this.height + this.minValue))
             }
 
-            push()
-            if (this.centeredVar) translate(-this.width/2, -this.height/2)
-            // Background
-            if (typeof this.backgroundVar == "function") {
-                this.backgroundVar(this.x, this.y, this.width, this.height)
-                noFill()
+            if (context) {
+                // Render on to specified context
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                // Background
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(x, y, this.width, this.height, this.value, context)
+                    context.noFill()
+                }
+                else {
+                    context.fill(this.backgroundVar)
+                }
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                context.pop()
+                
+                this.knobVar.render(this.x+this.width/2, this.height-(this.value-this.minValue)*this.height/(this.maxValue-this.minValue)+this.y, context, contextX, contextY)
             }
             else {
-                fill(this.backgroundVar)
-            }
-            stroke(this.borderVar)
-            strokeWeight(this.borderWeightVar)
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-            pop()
-            
-            if (this.centeredVar) {
-                this.knobVar.render(this.x, this.height/2-(this.value-this.minValue)*this.height/(this.maxValue-this.minValue)+this.y)
-            }
-            else {
+                // Render directly on to main canvas
+                push()
+                // Background
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(this.x, this.y, this.width, this.height)
+                    noFill()
+                }
+                else {
+                    fill(this.backgroundVar)
+                }
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                pop()
+                
                 this.knobVar.render(this.x+this.width/2, this.height-(this.value-this.minValue)*this.height/(this.maxValue-this.minValue)+this.y)
             }
         }
     }
 
     calcEditingCursorOffset() {
-        this.editingCursorOffset = mouseY-this.knobVar.y;
+        this.editingCursorOffset = mouseY-(this.height-(this.value-this.minValue)*this.height/(this.maxValue-this.minValue)+this.y);
     }
-}class Slider2D {
+}class SliderSheet {
     constructor (width=100, height=100) {
         this.x;
         this.y;
         this.width = width;
         this.height = height;
 
-        this.typeable = true;
         this.clickable = true;
+        this.typeable = true;
+        this.scrollable = true;
         this.alignment = "leading";
         this.hiddenVar = false;
         this.phantomVar = false;
@@ -1346,11 +2265,20 @@ class VSlider extends Slider {
         this.editingCursorOffset = {x: 0, y: 0};
 
         this.backgroundVar = Color.secondary;
-        this.borderVar = Color.transparent;
+        this.borderVar = Color.primary;
         this.borderWeightVar = 1;
         this.cornerRadiusVar = [6, 6, 6, 6];
 
         this.knobVar = new Block(18, 18).cornerRadius(18).centered(true)
+
+        this.popupID = "";
+        this.canSelect = true;
+    }
+
+    pipe(popupID, canSelect) {
+        if (popupID !== undefined) this.popupID = popupID;
+        if (canSelect !== undefined) this.canSelect = canSelect;
+        if (this.knobVar) if (this.knobVar.clickable) this.knobVar.pipe(popupID, canSelect)
     }
 
     update() {
@@ -1383,66 +2311,85 @@ class VSlider extends Slider {
             }
         }
         
-        if (this.mouseOver() || this.knobVar.mouseOver()) {
-            cursor("pointer")
-            this.displayState = "hover"
-            if (this.editing) {
-                this.displayState = "pressed"
+        if (this.lockedVar == false) {
+            if (this.canSelect) {
+                if (this.mouseOver() || this.knobVar.mouseOver()) {
+                    if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                        cursor("pointer")
+                        this.displayState = "hover"
+                        if (this.editing) {
+                            this.displayState = "pressed"
+                        }
+                        doHotMouseDown = false;
+                        doHotMouseUp = false;
+                    }
+                }
+                else {
+                    if (this.displayState == "hover" || this.displayState == "pressed") {
+                        doHotMouseDown = true;
+                        doHotMouseUp = true;
+                    }
+                    this.displayState = "default"
+                }
             }
-            doHotMouseDown = false;
-            doHotMouseUp = false;
-        }
-        else {
-            if (this.displayState == "hover" || this.displayState == "pressed") {
-                doHotMouseDown = true;
-                doHotMouseUp = true;
-            }
-            this.displayState = "default"
         }
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
 
         if (this.hiddenVar == false) {
-            if (this.lockedVar == false) {
-                this.update()
-                if (this.editing) {
-                    if (this.centeredVar) {
-                        this.set({
-                            x: Math.round((mouseX-this.editingCursorOffset.x-this.x+this.width/2)/this.width*(this.maxValue.x-this.minValue.x)+this.minValue.x),
-                            y: Math.round((mouseY-this.editingCursorOffset.y-this.y+this.height/2)/this.height*(this.maxValue.y-this.minValue.y)+this.minValue.y),
-                        })
-                    }
-                    else {
-                        this.set({
-                            x: Math.round((mouseX-this.editingCursorOffset.x-this.x)/this.width*(this.maxValue.x-this.minValue.x)+this.minValue.x),
-                            y: Math.round((mouseY-this.editingCursorOffset.y-this.y)/this.height*(this.maxValue.y-this.minValue.y)+this.minValue.y),
-                        })
-                    }
+            this.update()
+            if (this.lockedVar == false && this.editing) {
+                this.set({
+                    x: Math.round((mouseX-this.editingCursorOffset.x-this.x)/this.width*(this.maxValue.x-this.minValue.x)+this.minValue.x),
+                    y: Math.round((mouseY-this.editingCursorOffset.y-this.y)/this.height*(this.maxValue.y-this.minValue.y)+this.minValue.y),
+                })
+            }
+            
+            if (context) {
+                // Render on to specified context
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                // Background
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(x, y, this.width, this.height, this.value, context)
+                    context.noFill()
                 }
-            }
-            
-            push()
-            if (this.centeredVar) translate(-this.width/2, -this.height/2)
-            // Background
-            if (typeof this.backgroundVar == "function") {
-                this.backgroundVar(this.x, this.y, this.width, this.height)
-                noFill()
-            }
-            else {
-                fill(this.backgroundVar)
-            }
-            stroke(this.borderVar)
-            strokeWeight(this.borderWeightVar)
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-            pop()
-            
-            if (this.centeredVar) {
-                this.knobVar.render((this.value.x-this.minValue.x)/(this.maxValue.x-this.minValue.x)*this.width+this.x-this.width/2, (this.value.y-this.minValue.y)/(this.maxValue.y-this.minValue.y)*this.height+this.y-this.height/2)
+                else {
+                    context.fill(this.backgroundVar)
+                }
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                context.pop()
+                
+                this.knobVar.render((this.value.x-this.minValue.x)/(this.maxValue.x-this.minValue.x)*this.width+this.x, (this.value.y-this.minValue.y)/(this.maxValue.y-this.minValue.y)*this.height+this.y, context, contextX, contextY)
             }
             else {
+                // Render directly on to main canvas
+                push()
+                // Background
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(this.x, this.y, this.width, this.height, this.value)
+                    noFill()
+                }
+                else {
+                    fill(this.backgroundVar)
+                }
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                pop()
+                
                 this.knobVar.render((this.value.x-this.minValue.x)/(this.maxValue.x-this.minValue.x)*this.width+this.x, (this.value.y-this.minValue.y)/(this.maxValue.y-this.minValue.y)*this.height+this.y)
             }
         }
@@ -1482,27 +2429,40 @@ class VSlider extends Slider {
 
     min(value) {
         this.minValue = value;
+        if (this.value.x < this.minValue.x) {
+            this.value.x = this.minValue.x;
+        }
+        if (this.value.y < this.minValue.y) {
+            this.value.y = this.minValue.y;
+        }
         return this;
     }
     max(value) {
         this.maxValue = value;
+        if (this.value.x > this.maxValue.x) {
+            this.value.x = this.maxValue.x;
+        }
+        if (this.value.y > this.maxValue.y) {
+            this.value.y = this.maxValue.y;
+        }
         return this;
     }
 
     align(value) {
-        if (value != "leading" && value != "center" && value != "trailing") {
-            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
-            return this;
+        if (value == "leading" || value == "center" || value == "trailing") {
+            this.alignment = value;
         }
-        this.alignment = value;
+        else {
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+        }
         return this;
     }
 
-    hidden(value) {
+    hidden(value=true) {
         this.hiddenVar = value;
         return this;
     }
-    phantom(value) {
+    phantom(value=true) {
         this.phantomVar = value;
         return this;
     }
@@ -1519,12 +2479,16 @@ class VSlider extends Slider {
 
     onMousePressed() {
         if (this.hiddenVar == false && this.phantomVar == false) {
-            if (this.knobVar.mouseOver()) {
-                this.editingCursorOffset = {x: mouseX-this.knobVar.x, y: mouseY-this.knobVar.y};
-                this.editing = true;
-            }
-            else if (this.mouseOver()) {
-                this.editing = true;
+            if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                if (this.canSelect) {
+                    if (this.knobVar.mouseOver()) {
+                        this.editingCursorOffset = {x: mouseX-((this.value.x-this.minValue.x)/(this.maxValue.x-this.minValue.x)*this.width+this.x), y: mouseY-((this.value.y-this.minValue.y)/(this.maxValue.y-this.minValue.y)*this.height+this.y)};
+                        this.editing = true;
+                    }
+                    else if (this.mouseOver()) {
+                        this.editing = true;
+                    }
+                }
             }
             if (this.knobVar.clickable) this.knobVar.onMousePressed()
         }
@@ -1544,13 +2508,14 @@ class VSlider extends Slider {
         }
     }
 
+    onMouseWheel(event) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.knobVar.typeable) this.knobVar.onMouseWheel(event)
+        }
+    }
+
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
-        }
-        else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
-        }
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
     }
 
@@ -1597,10 +2562,12 @@ class VSlider extends Slider {
         this.width = 0;
         this.height = 0;
         this.contents = [];
+        this.pad = 0;
         this.spacingVar = 15;
         
         this.clickable = true;
         this.typeable = true;
+        this.scrollable = true;
         this.alignment = "leading";
         this.hiddenVar = false;
         this.phantomVar = false;
@@ -1611,10 +2578,26 @@ class VSlider extends Slider {
         this.borderVar = Color.transparent;
         this.borderWeightVar = 1;
         this.cornerRadiusVar = [0, 0, 0, 0];
+
+        this.popupID = "";
+        this.canSelect = true;
     }
 
-    contains(array) {
-        this.contents = array;
+    pipe(popupID, canSelect) {
+        if (popupID !== undefined) this.popupID = popupID;
+        if (canSelect !== undefined) this.canSelect = canSelect;
+        for (let n = 0; n < this.contents.length; n++) {
+            if (this.contents[n].clickable) this.contents[n].pipe(popupID, canSelect)
+        }
+    }
+
+    contains(elems) {
+        this.contents = elems;
+        return this;
+    }
+
+    padding(value) {
+        this.pad = value;
         return this;
     }
 
@@ -1628,16 +2611,16 @@ class VSlider extends Slider {
             this.alignment = value;
         }
         else {
-            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
         }
         return this;
     }
 
-    hidden(value) {
+    hidden(value=true) {
         this.hiddenVar = value;
         return this;
     }
-    phantom(value) {
+    phantom(value=true) {
         this.phantomVar = value;
         return this;
     }
@@ -1647,13 +2630,13 @@ class VSlider extends Slider {
         return this;
     }
 
-    background(colour) {
-        this.backgroundVar = colour;
+    background(input) {
+        this.backgroundVar = input;
         return this;
     }
 
-    border(value) {
-        this.borderVar = value;
+    border(colour) {
+        this.borderVar = colour;
         return this;
     }
 
@@ -1698,13 +2681,16 @@ class VSlider extends Slider {
         }
     }
 
+    onMouseWheel(event) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            for (let n = 0; n < this.contents.length; n++) {
+                if (this.contents[n].scrollable) this.contents[n].onMouseWheel(event)
+            }
+        }
+    }
+
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
-        }
-        else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
-        }
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
     }
 }
@@ -1715,14 +2701,14 @@ class VStack extends Stack {
     }
 
     calcDimensions() {
-        this.width = 0;
-        this.height = 0;
+        this.width = this.pad*2;
+        this.height = this.pad*2;
         let i = 0;
         for (let n = 0; n < this.contents.length; n++) {
             let elem = this.contents[n]
             if (elem.phantomVar == false) {
                 i++;
-                this.width = Math.max(this.width, elem.width);
+                this.width = Math.max(this.width, elem.width+this.pad*2);
                 this.height += elem.height + this.spacingVar;
             }
         }
@@ -1731,37 +2717,86 @@ class VStack extends Stack {
         }
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
         this.calcDimensions()
 
         if (this.hiddenVar == false) {
-            push()
-            if (this.centeredVar) translate(-this.width/2, -this.height/2)
-            fill(this.backgroundVar)
-            stroke(this.borderVar)
-            strokeWeight(this.borderWeightVar)
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-            let ySweep = 0;
-            for (let n = 0; n < this.contents.length; n++) {
-                let elem = this.contents[n]
-                if (elem.phantomVar == false) {
-                    switch (elem.alignment) {
-                        case "leading":
-                            elem.render(this.x, this.y + ySweep);
-                            break;
-                        case "center":
-                            elem.render(this.x + (this.width - this.contents[n].width)/2, this.y + ySweep);
-                            break;
-                        case "trailing":
-                            elem.render(this.x + this.width - this.contents[n].width, this.y + ySweep);
-                            break;
+            if (context) {
+                // Render on to specified context
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(x, y, this.width, this.height, context)
+                    context.noFill()
+                }
+                else {
+                    context.fill(this.backgroundVar)
+                }
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                context.pop()
+                let ySweep = this.pad;
+                for (let n = 0; n < this.contents.length; n++) {
+                    let elem = this.contents[n]
+                    if (elem.phantomVar == false) {
+                        switch (elem.alignment) {
+                            case "leading":
+                                elem.render(this.x+this.pad, this.y + ySweep, context, contextX, contextY);
+                                break;
+                            case "center":
+                                elem.render(this.x + (this.width - this.contents[n].width)/2, this.y + ySweep, context, contextX, contextY);
+                                break;
+                            case "trailing":
+                                elem.render(this.x - this.pad + this.width - this.contents[n].width, this.y + ySweep, context, contextX, contextY);
+                                break;
+                        }
+                        ySweep += elem.height + this.spacingVar;
                     }
-                    ySweep += elem.height + this.spacingVar;
                 }
             }
-            pop()
+            else {
+                // Render directly on to main canvas
+                push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(this.x, this.y, this.width, this.height)
+                    noFill()
+                }
+                else {
+                    fill(this.backgroundVar)
+                }
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                pop()
+                let ySweep = this.pad;
+                for (let n = 0; n < this.contents.length; n++) {
+                    let elem = this.contents[n]
+                    if (elem.phantomVar == false) {
+                        switch (elem.alignment) {
+                            case "leading":
+                                elem.render(this.x+this.pad, this.y + ySweep);
+                                break;
+                            case "center":
+                                elem.render(this.x + (this.width - this.contents[n].width)/2, this.y + ySweep);
+                                break;
+                            case "trailing":
+                                elem.render(this.x - this.pad + this.width - this.contents[n].width, this.y + ySweep);
+                                break;
+                        }
+                        ySweep += elem.height + this.spacingVar;
+                    }
+                }
+            }
         }
     }
 }
@@ -1772,14 +2807,14 @@ class HStack extends Stack {
     }
 
     calcDimensions() {
-        this.width = 0;
-        this.height = 0;
+        this.width = this.pad*2;
+        this.height = this.pad*2;
         let i = 0;
         for (let n = 0; n < this.contents.length; n++) {
             let elem = this.contents[n];
             if (elem.phantomVar == false) {
                 i++;
-                this.height = Math.max(this.height, elem.height);
+                this.height = Math.max(this.height, elem.height + this.pad*2);
                 this.width += elem.width + this.spacingVar;
             }
         }
@@ -1788,45 +2823,95 @@ class HStack extends Stack {
         }
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
         this.calcDimensions()
 
         if (this.hiddenVar == false) {
-            push()
-            if (this.centeredVar) translate(-this.width/2, -this.height/2)
-            fill(this.backgroundVar)
-            stroke(this.borderVar)
-            strokeWeight(this.borderWeightVar)
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-            let xSweep = 0;
-            for (let n = 0; n < this.contents.length; n++) {
-                let elem = this.contents[n]
-                if (elem.phantomVar == false) {
-                    switch (elem.alignment) {
-                        case "leading":
-                            this.contents[n].render(this.x + xSweep, this.y );
-                            break;
-                        case "center":
-                            this.contents[n].render(this.x + xSweep, (2*this.y + this.height - this.contents[n].height)/2);
-                            break;
-                        case "trailing":
-                            this.contents[n].render(this.x + xSweep, this.y + this.height - this.contents[n].height);
-                            break;
+            if (context) {
+                // Render on to specified context
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(x, y, this.width, this.height, context)
+                    context.noFill()
+                }
+                else {
+                    context.fill(this.backgroundVar)
+                }
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                context.pop()
+                let xSweep = this.pad;
+                for (let n = 0; n < this.contents.length; n++) {
+                    let elem = this.contents[n]
+                    if (elem.phantomVar == false) {
+                        switch (elem.alignment) {
+                            case "leading":
+                                this.contents[n].render(this.x + xSweep, this.y + this.pad, context, contextX, contextY);
+                                break;
+                            case "center":
+                                this.contents[n].render(this.x + xSweep, (2*this.y + this.height - this.contents[n].height)/2, context, contextX, contextY);
+                                break;
+                            case "trailing":
+                                this.contents[n].render(this.x + xSweep, this.y - this.pad + this.height - this.contents[n].height, context, contextX, contextY);
+                                break;
+                        }
+                        xSweep += this.contents[n].width + this.spacingVar;
                     }
-                    xSweep += this.contents[n].width + this.spacingVar;
                 }
             }
-            pop()
+            else {
+                // Render directly on to main canvas
+                push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(this.x, this.y, this.width, this.height)
+                    noFill()
+                }
+                else {
+                    fill(this.backgroundVar)
+                }
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                pop()
+                let xSweep = this.pad;
+                for (let n = 0; n < this.contents.length; n++) {
+                    let elem = this.contents[n]
+                    if (elem.phantomVar == false) {
+                        switch (elem.alignment) {
+                            case "leading":
+                                this.contents[n].render(this.x + xSweep, this.y + this.pad);
+                                break;
+                            case "center":
+                                this.contents[n].render(this.x + xSweep, (2*this.y + this.height - this.contents[n].height)/2);
+                                break;
+                            case "trailing":
+                                this.contents[n].render(this.x + xSweep, this.y - this.pad + this.height - this.contents[n].height);
+                                break;
+                        }
+                        xSweep += this.contents[n].width + this.spacingVar;
+                    }
+                }
+            }
         }
     }
 }class Text {
-    constructor(text) {
+    constructor(text="Text") {
         this.x;
         this.y;
         this.t = `${text}`;
         this.tSize = 18;
+        this.binding = "";
         this.pFactor = 0;
         this.width = 0;
         this.height = 0;
@@ -1834,13 +2919,13 @@ class HStack extends Stack {
         this.minWidthVar = 0;
         this.minHeightVar = 0;
 
-        this.typeable = false;
         this.clickable = false;
+        this.typeable = false;
+        this.scrollable = false;
         this.alignment = "leading";
         this.hiddenVar = false;
         this.phantomVar = false;
 
-        this.binding = "";
 
         this.centeredVar = false;
 
@@ -1867,16 +2952,16 @@ class HStack extends Stack {
             this.alignment = value;
         }
         else {
-            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
         }
         return this;
     }
 
-    hidden(value) {
+    hidden(value=true) {
         this.hiddenVar = value;
         return this;
     }
-    phantom(value) {
+    phantom(value=true) {
         this.phantomVar = value;
         return this;
     }
@@ -1886,60 +2971,108 @@ class HStack extends Stack {
         return this;
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
+
         if (this.binding != "") this.t = `${eval(this.binding)}`
 
-        push();
-        if (this.centeredVar) translate(-this.width/2, -this.height/2)
-
-        textSize(this.tSize)
-        if (this.emphasisVar) textStyle(this.emphasisVar)
-        if (this.fontVar) textFont(this.fontVar)
-        let lines = this.t.split("\n")
-        let longestLineIndex = 0;
-        for (let n = 1; n < lines.length; n++) {
-            if (textWidth(lines[n]) > textWidth(lines[longestLineIndex])) longestLineIndex = n;
-        }
-        let tWidth = textWidth(lines[longestLineIndex])
-        this.width = Math.max(this.minWidthVar, tWidth + this.tSize*this.pFactor*2)
-        textAlign(LEFT, TOP)
-        this.height = Math.max(this.minHeightVar, this.tSize*(lines.length + this.pFactor*2))
-        
-        if (this.hiddenVar == false) {
-            fill(this.backgroundVar)
-            stroke(this.borderVar)
-            strokeWeight(this.borderWeightVar)
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-
-            fill(this.textColourVar)
-            stroke(this.textBorderVar)
-            strokeWeight(this.textBorderWeightVar)
-            for (let n = 0; n < lines.length; n++) {
-                text(lines[n], this.x+this.tSize*this.pFactor, this.y + this.tSize*(this.pFactor+n))
+        if (context) {
+            // Render on to specified context
+            let x = this.x - contextX;
+            let y = this.y - contextY;
+            context.push();
+            context.textSize(this.tSize)
+            if (this.emphasisVar) context.textStyle(this.emphasisVar)
+            if (this.fontVar) context.textFont(this.fontVar)
+            let lines = this.t.split("\n")
+            let longestLineIndex = 0;
+            for (let n = 1; n < lines.length; n++) {
+                if (context.textWidth(lines[n]) > context.textWidth(lines[longestLineIndex])) longestLineIndex = n;
             }
+            let tWidth = context.textWidth(lines[longestLineIndex])
+            this.width = Math.max(this.minWidthVar, tWidth + this.tSize*this.pFactor*2)
+            context.textAlign(LEFT, TOP)
+            this.height = Math.max(this.minHeightVar, this.tSize*(lines.length + this.pFactor*2))
+            
+            if (this.hiddenVar == false) {
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(x, y, this.width, this.height, context)
+                    context.noFill()
+                }
+                else {
+                    context.fill(this.backgroundVar)
+                }
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+
+                context.fill(this.textColourVar)
+                context.stroke(this.textBorderVar)
+                context.strokeWeight(this.textBorderWeightVar)
+                for (let n = 0; n < lines.length; n++) {
+                    context.text(lines[n], x+this.tSize*this.pFactor, y + this.tSize*(this.pFactor+n))
+                }
+            }
+            context.pop();
         }
-        pop();
+        else {
+            // Render directly on to main canvas
+            push();
+            textSize(this.tSize)
+            if (this.emphasisVar) textStyle(this.emphasisVar)
+            if (this.fontVar) textFont(this.fontVar)
+            let lines = this.t.split("\n")
+            let longestLineIndex = 0;
+            for (let n = 1; n < lines.length; n++) {
+                if (textWidth(lines[n]) > textWidth(lines[longestLineIndex])) longestLineIndex = n;
+            }
+            let tWidth = textWidth(lines[longestLineIndex])
+            this.width = Math.max(this.minWidthVar, tWidth + this.tSize*this.pFactor*2)
+            textAlign(LEFT, TOP)
+            this.height = Math.max(this.minHeightVar, this.tSize*(lines.length + this.pFactor*2))
+            
+            if (this.hiddenVar == false) {
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(this.x, this.y, this.width, this.height)
+                    noFill()
+                }
+                else {
+                    fill(this.backgroundVar)
+                }
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+
+                fill(this.textColourVar)
+                stroke(this.textBorderVar)
+                strokeWeight(this.textBorderWeightVar)
+                for (let n = 0; n < lines.length; n++) {
+                    text(lines[n], this.x+this.tSize*this.pFactor, this.y + this.tSize*(this.pFactor+n))
+                }
+            }
+            pop();
+        }
     }
 
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
-        }
-        else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
-        }
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
     }
 
-    background(colour) {
-        this.backgroundVar = colour;
+    background(input) {
+        this.backgroundVar = input;
         return this;
     }
 
-    border(value) {
-        this.borderVar = value;
+    border(colour) {
+        this.borderVar = colour;
         return this;
     }
 
@@ -2028,7 +3161,7 @@ class Label extends Text {
         this.textColour(Color.secondary)
     }
 }class TextInput extends Text {
-    constructor(defaultText="", doMultiLine=false) {
+    constructor(defaultText="Text Input", doMultiLine=false) {
         super(defaultText)
         this.editing = false;
         this.edited = false;
@@ -2038,12 +3171,13 @@ class Label extends Text {
         this.maxWidthVar = Infinity;
         this.maxHeightVar = Infinity;
 
-        this.typeable = true;
         this.clickable = true;
+        this.typeable = true;
+        this.scrollable = false;
 
         this.hovering = false;
 
-        this.centeredVar = false;
+        this.lockedVar = false;
 
         this.showingCursor = false;
         this.lastToggledCursor = new Date();
@@ -2052,11 +3186,25 @@ class Label extends Text {
 
         // Default styling config
         this.background(Color.nearInverse)
+
+        this.popupID = "";
+        this.canSelect = true;
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    pipe(popupID, canSelect) {
+        if (popupID !== undefined) this.popupID = popupID;
+        if (canSelect !== undefined) this.canSelect = canSelect;
+    }
+
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
 
         if (this.binding != "") {
             if (this.t != eval(this.binding)) {
@@ -2069,85 +3217,180 @@ class Label extends Text {
             }
         }
         
-        push()
-        if (this.centeredVar) translate(-this.width/2, -this.height/2)
-        
-        textSize(this.tSize)
-        if (this.emphasisVar) textStyle(this.emphasisVar)
-        if (this.fontVar) textFont(this.fontVar)
-        let lines;
-        if (this.t == "") {
-            lines = this.placeholderVar.split("\n")
-            fill(this.textColourVar[0], this.textColourVar[1], this.textColourVar[2], (this.textColourVar[3] ?? 255)*0.4)
-            stroke(this.textBorderVar[0], this.textBorderVar[1], this.textBorderVar[2], (this.textBorderVar[3] ?? 255)*0.4)
-        }
-        else {
-            lines = this.t.split("\n")
-            fill(this.textColourVar)
-            stroke(this.textBorderVar)
-        }
-        strokeWeight(this.textBorderWeightVar)
-        
-        let longestLineIndex = 0;
-        for (let n = 1; n < lines.length; n++) {
-            if (textWidth(lines[n]) > textWidth(lines[longestLineIndex])) longestLineIndex = n;
-        }
-        let tWidth = textWidth(lines[longestLineIndex])
-        this.width = Math.max(this.minWidthVar, tWidth + this.tSize*this.pFactor*2)
-        textAlign(LEFT, TOP)
-        this.height = Math.max(this.minHeightVar, this.tSize*(lines.length + this.pFactor*2))
-        
-        if (this.hiddenVar == false) {
-
-            if (this.mouseOver()) {
-                cursor("text")
-                this.hovering = true;
-                doHotMouseDown = false;
-                doHotMouseUp = false;
+        if (context) {
+            // Render on to specified context
+            let x = this.x - contextX;
+            let y = this.y - contextY;
+            context.push()
+            context.textSize(this.tSize)
+            if (this.emphasisVar) context.textStyle(this.emphasisVar)
+            if (this.fontVar) context.textFont(this.fontVar)
+            let lines;
+            if (this.t == "") {
+                lines = this.placeholderVar.split("\n")
+                context.fill(this.textColourVar[0], this.textColourVar[1], this.textColourVar[2], (this.textColourVar[3] ?? 255)*0.4)
+                context.stroke(this.textBorderVar[0], this.textBorderVar[1], this.textBorderVar[2], (this.textBorderVar[3] ?? 255)*0.4)
             }
             else {
-                if (this.hovering) {
-                    doHotMouseDown = true;
-                    doHotMouseUp = true;
-                }
-                this.hovering = false;
+                lines = this.t.split("\n")
+                context.fill(this.textColourVar)
+                context.stroke(this.textBorderVar)
             }
-
+            context.strokeWeight(this.textBorderWeightVar)
+            
+            let longestLineIndex = 0;
+            for (let n = 1; n < lines.length; n++) {
+                if (context.textWidth(lines[n]) > context.textWidth(lines[longestLineIndex])) longestLineIndex = n;
+            }
+            let tWidth = context.textWidth(lines[longestLineIndex])
+            this.width = Math.max(this.minWidthVar, tWidth + this.tSize*this.pFactor*2)
+            context.textAlign(LEFT, TOP)
+            this.height = Math.max(this.minHeightVar, this.tSize*(lines.length + this.pFactor*2))
+            
+            if (this.hiddenVar == false) {
+                if (this.lockedVar == false) {
+                    if (this.mouseOver() && this.canSelect) {
+                        if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                            cursor("text")
+                            this.hovering = true;
+                            doHotMouseDown = false;
+                            doHotMouseUp = false;
+                        }
+                    }
+                    else {
+                        if (this.hovering) {
+                            doHotMouseDown = true;
+                            doHotMouseUp = true;
+                        }
+                        this.hovering = false;
+                    }
+                }
+    
+                context.push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(x, y, this.width, this.height, context)
+                    context.noFill()
+                }
+                else {
+                    context.fill(this.backgroundVar)
+                }
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                context.pop()
+    
+                for (let n = 0; n < lines.length; n++) {
+                    context.text(lines[n], x+this.tSize*this.pFactor, y + this.tSize*(this.pFactor+n))
+                }
+    
+                if (this.editing) {
+                    const now = new Date()
+                    if (now - this.lastToggledCursor > 530) {
+                        this.showingCursor = !this.showingCursor;
+                        this.lastToggledCursor = now;
+                    }
+                    if (this.showingCursor) {
+                        let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
+                        let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
+                        let lineX = x+context.textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
+                        let lineY1 =  y + this.tSize*(this.pFactor + lineNumber);
+                        let lineY2 = y + this.tSize*(this.pFactor + lineNumber+1);
+                        context.stroke(this.cursorColourVar)
+                        context.strokeWeight(this.cursorWeightVar)
+                        context.line(lineX, lineY1, lineX, lineY2)
+                    }
+                }
+            }
+            context.pop()
+        }
+        else {
+            // Render directly on to main canvas
             push()
-            fill(this.backgroundVar)
-            stroke(this.borderVar)
-            strokeWeight(this.borderWeightVar)
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
-            pop()
-
-            for (let n = 0; n < lines.length; n++) {
-                text(lines[n], this.x+this.tSize*this.pFactor, this.y + this.tSize*(this.pFactor+n))
+            textSize(this.tSize)
+            if (this.emphasisVar) textStyle(this.emphasisVar)
+            if (this.fontVar) textFont(this.fontVar)
+            let lines;
+            if (this.t == "") {
+                lines = this.placeholderVar.split("\n")
+                fill(this.textColourVar[0], this.textColourVar[1], this.textColourVar[2], (this.textColourVar[3] ?? 255)*0.4)
+                stroke(this.textBorderVar[0], this.textBorderVar[1], this.textBorderVar[2], (this.textBorderVar[3] ?? 255)*0.4)
             }
-
-            if (this.editing) {
-                const now = new Date()
-                if (now - this.lastToggledCursor > 530) {
-                    this.showingCursor = !this.showingCursor;
-                    this.lastToggledCursor = now;
+            else {
+                lines = this.t.split("\n")
+                fill(this.textColourVar)
+                stroke(this.textBorderVar)
+            }
+            strokeWeight(this.textBorderWeightVar)
+            
+            let longestLineIndex = 0;
+            for (let n = 1; n < lines.length; n++) {
+                if (textWidth(lines[n]) > textWidth(lines[longestLineIndex])) longestLineIndex = n;
+            }
+            let tWidth = textWidth(lines[longestLineIndex])
+            this.width = Math.max(this.minWidthVar, tWidth + this.tSize*this.pFactor*2)
+            textAlign(LEFT, TOP)
+            this.height = Math.max(this.minHeightVar, this.tSize*(lines.length + this.pFactor*2))
+            
+            if (this.hiddenVar == false) {
+                if (this.lockedVar == false) {
+                    if (this.mouseOver() && this.canSelect) {
+                        if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                            cursor("text")
+                            this.hovering = true;
+                            doHotMouseDown = false;
+                            doHotMouseUp = false;
+                        }
+                    }
+                    else {
+                        if (this.hovering) {
+                            doHotMouseDown = true;
+                            doHotMouseUp = true;
+                        }
+                        this.hovering = false;
+                    }
                 }
-                if (this.showingCursor) {
-                    let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
-                    let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
-                    let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
-                    let lineY1 =  this.y + this.tSize*(this.pFactor + lineNumber);
-                    let lineY2 = this.y + this.tSize*(this.pFactor + lineNumber+1);
-                    stroke(this.cursorColourVar)
-                    strokeWeight(this.cursorWeightVar)
-                    line(lineX, lineY1, lineX, lineY2)
+    
+                push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(this.x, this.y, this.width, this.height)
+                    noFill()
+                }
+                else {
+                    fill(this.backgroundVar)
+                }
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                pop()
+    
+                for (let n = 0; n < lines.length; n++) {
+                    text(lines[n], this.x+this.tSize*this.pFactor, this.y + this.tSize*(this.pFactor+n))
+                }
+    
+                if (this.editing) {
+                    const now = new Date()
+                    if (now - this.lastToggledCursor > 530) {
+                        this.showingCursor = !this.showingCursor;
+                        this.lastToggledCursor = now;
+                    }
+                    if (this.showingCursor) {
+                        let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
+                        let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
+                        let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
+                        let lineY1 =  this.y + this.tSize*(this.pFactor + lineNumber);
+                        let lineY2 = this.y + this.tSize*(this.pFactor + lineNumber+1);
+                        stroke(this.cursorColourVar)
+                        strokeWeight(this.cursorWeightVar)
+                        line(lineX, lineY1, lineX, lineY2)
+                    }
                 }
             }
-
             pop()
         }
     }
 
     onKeyPressed() {
-        if (this.hiddenVar == false && this.phantomVar == false) {
+        if (this.hiddenVar == false && this.phantomVar == false && this.lockedVar == false) {
             if (this.editing) {
                 switch (key) {
                     case "ArrowLeft":
@@ -2296,7 +3539,7 @@ class Label extends Text {
         }
         else {
             closestCursorAfter = this.t
-            for (let i = 0; i < this.t.length-1; i++) {
+            for (let i = 0; i < this.t.length; i++) {
                 let sample = this.t.slice(0, i)
                 if (Math.abs(this.x + textWidth(sample) + this.tSize*this.pFactor - mx) < Math.abs(this.x + textWidth(closestCursorAfter) + this.tSize*this.pFactor - mx)) closestCursorAfter = sample;
             }
@@ -2306,15 +3549,17 @@ class Label extends Text {
     }
 
     onMousePressed() {
-        if (this.hiddenVar == false && this.phantomVar == false) {
-            if (this.mouseOver()) {
-                this.editing = true;
-                doHotkeys = false;
-                doHotMouseDown = false;
-                doHotMouseUp = false;
-                this.cursorAfter = this.getClosestCursorAfter(mouseX, mouseY)
-                this.showingCursor = true;
-                this.lastToggledCursor = new Date();
+        if (this.hiddenVar == false && this.phantomVar == false && this.lockedVar == false) {
+            if (this.mouseOver() && this.canSelect) {
+                if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                    this.editing = true;
+                    doHotkeys = false;
+                    doHotMouseDown = false;
+                    doHotMouseUp = false;
+                    this.cursorAfter = this.getClosestCursorAfter(mouseX, mouseY)
+                    this.showingCursor = true;
+                    this.lastToggledCursor = new Date();
+                }
             }
             else {
                 if (this.editing) {
@@ -2328,23 +3573,25 @@ class Label extends Text {
     }
 
     onMouseReleased() {
-        // if (this.hiddenVar == false && this.phantomVar == false) {
+        // if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+            // if (this.hiddenVar == false && this.phantomVar == false && this.lockedVar == false) {
 
+            // }
         // }
     }
 
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
-        }
-        else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
-        }
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
     }
 
     placeholder(text) {
         this.placeholderVar = text;
+        return this;
+    }
+
+    locked(value=true) {
+        this.lockedVar = value;
         return this;
     }
 
@@ -2376,6 +3623,7 @@ class Label extends Text {
 
         this.clickable = true;
         this.typeable = true;
+        this.scrollable = true;
         this.alignment = "leading";
         this.hiddenVar = false;
         this.phantomVar = false;
@@ -2387,6 +3635,7 @@ class Label extends Text {
         this.popupVar;
         
         this.centeredVar = false;
+        this.lockedVar = false;
         this.displayState = "default off";
         this.on = false;
 
@@ -2394,58 +3643,79 @@ class Label extends Text {
         this.backgroundVar = {"default on": Color.accent, "default off": Color.secondary, "hover on": Color.accent, "hover off": Color.secondary, "pressed on": Color.brighter(Color.accent), "pressed off": Color.brighter(Color.secondary)};
         this.borderVar = {"default on": Color.transparent, "default off": Color.transparent, "hover on": Color.transparent, "hover off": Color.transparent, "pressed on": Color.transparent, "pressed off": Color.transparent, };
         this.borderWeightVar = {"default on": 1, "default off": 1, "hover on": 1, "hover off": 1, "pressed on": 1, "pressed off": 1};
+
+        this.popupID = "";
+        this.canSelect = true;
+    }
+
+    pipe(popupID, canSelect) {
+        if (popupID !== undefined) this.popupID = popupID;
+        if (canSelect !== undefined) this.canSelect = canSelect;
+        if (this.knobVar) if (this.knobVar[this.displayState]) if (this.knobVar[this.displayState].clickable) this.knobVar[this.displayState].pipe(popupID, canSelect)
+        if (this.contents) if (this.contents[this.displayState]) if (this.contents[this.displayState].clickable) this.contents[this.displayState].pipe(popupID, canSelect)
     }
 
     update() {
-        if (this.mouseOver()) {
-            cursor("pointer")
-            this.displayState = `hover ${this.on ? "on": "off"}`
-            if (mouseIsPressed) {
-                this.displayState = `pressed ${this.on ? "on": "off"}`
+        if (this.lockedVar == false) {
+            let condition = false;
+            if (this.mouseOver() && this.canSelect) condition = true;
+            else if (this.knobVar) {
+                if (this.knobVar[this.displayState].mouseOver() && this.canSelect) condition = true;
             }
-            doHotMouseDown = false;
-            doHotMouseUp = false;
-            // console.log(doHotMouseDown, this.radioName)
-        }
-        else {
-            if (this.displayState == "hover on" || this.displayState == "hover off" || this.displayState == "pressed on" || this.displayState == "pressed off") {
-                doHotMouseDown = true;
-                doHotMouseUp = true;
-            }
-            // console.log(doHotMouseDown, this.radioName)
-            this.displayState = this.on ? "default on" : "default off"
-        }
-        
-        if (this.binding != "") {
-            if (this.on != eval(this.binding)) {
-                // binding changed so update this.displayState and this.on
-                this.set(eval(this.binding))
-                if (!this.on && this.radioBinding != "") eval(`${this.radioBinding} = ""`)
-            }
-        }
-
-        if (this.radioBinding != "") {
-            if (eval(this.radioBinding) != this.radioName) {
-                if (this.on) this.set(false)
+            if (condition) {
+                if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                    cursor("pointer")
+                    this.displayState = `hover ${this.on ? "on": "off"}`
+                    if (mouseIsPressed) {
+                        this.displayState = `pressed ${this.on ? "on": "off"}`
+                    }
+                    doHotMouseDown = false;
+                    doHotMouseUp = false;
+                    // console.log(doHotMouseDown, this.radioName)
+                }
             }
             else {
-                if (!this.on) this.set(true)
+                if (this.displayState == "hover on" || this.displayState == "hover off" || this.displayState == "pressed on" || this.displayState == "pressed off") {
+                    doHotMouseDown = true;
+                    doHotMouseUp = true;
+                }
+                // console.log(doHotMouseDown, this.radioName)
+                this.displayState = this.on ? "default on" : "default off"
+            }
+
+            if (this.binding != "") {
+                if (this.on != eval(this.binding)) {
+                    // binding changed so update this.displayState and this.on
+                    this.set(eval(this.binding))
+                    if (!this.on && this.radioBinding != "") eval(`${this.radioBinding} = ""`)
+                }
+            }
+    
+            if (this.radioBinding != "") {
+                if (eval(this.radioBinding) != this.radioName) {
+                    if (this.on) this.set(false)
+                }
+                else {
+                    if (!this.on) this.set(true)
+                }
             }
         }
     }
 
     toggle() {
-        this.set(!this.on)
+        return this.set(!this.on);
     }
     set(value) {
         this.on = value;
-        this.displayState = this.on ? "default on" : "default off"
+        this.displayState = value ? "default on" : "default off"
         if (this.binding != "") eval(`${this.binding} = this.on`)
         if (this.radioBinding != "") {
             if (value == true) {
                 eval(`${this.radioBinding} = this.radioName`)
             }
         }
+        if (this.popupVar) this.popupVar.hidden(!value)
+        return this;
     }
 
     bind(target) {
@@ -2460,19 +3730,20 @@ class Label extends Text {
     }
 
     align(value) {
-        if (value != "leading" && value != "center" && value != "trailing") {
-            console.error(`Invalid alignment: '${this.alignment}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
-            return this;
+        if (value == "leading" || value == "center" || value == "trailing") {
+            this.alignment = value;
         }
-        this.alignment = value;
+        else {
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+        }
         return this;
     }
 
-    hidden(value) {
+    hidden(value=true) {
         this.hiddenVar = value;
         return this;
     }
-    phantom(value) {
+    phantom(value=true) {
         this.phantomVar = value;
         return this;
     }
@@ -2482,57 +3753,61 @@ class Label extends Text {
         return this;
     }
 
+    locked(value=true) {
+        this.lockedVar = value;
+        return this;
+    }
+
     onKeyPressed() {
         if (this.hiddenVar == false && this.phantomVar == false) {
-            if (this.popupVar && this.on) {
-                if (this.popupVar.typeable) {
-                    this.popupVar.onKeyPressed()
-                }
-            }
             if (this.knobVar) {
-                if (this.knobVar.clickable) this.knobVar.onKeyPressed()
+                if (this.knobVar[this.displayState].typeable) this.knobVar[this.displayState].onKeyPressed()
             }
         }
     }
 
     onMousePressed() {
         if (this.hiddenVar == false && this.phantomVar == false) {
-            if (this.popupVar && this.on) {
-                if (this.popupVar.clickable) {
-                    this.popupVar.onMousePressed()
-                }
-            }
             if (this.knobVar) {
-                if (this.knobVar.clickable) this.knobVar.onMousePressed()
+                if (this.knobVar[this.displayState].clickable) {
+                    this.knobVar[this.displayState].onMousePressed()
+                }
             }
         }
     }
 
     onMouseReleased() {
         if (this.hiddenVar == false && this.phantomVar == false) {
-            if (this.mouseOver()) {
-                this.toggle()
-                if (this.binding != "") eval(`${this.binding} = this.on`)
-                if (!this.on && this.radioBinding != "") eval(`${this.radioBinding} = ""`)
-            }
-            if (this.popupVar && this.on) {
-                if (this.popupVar.clickable) {
-                    this.popupVar.onMouseReleased()
+            if (this.lockedVar == false) {
+                let condition = false;
+                if (this.mouseOver() && this.canSelect) condition = true;
+                else if (this.knobVar) {
+                    if (this.knobVar[this.displayState].mouseOver() && this.canSelect) condition = true;
+                }
+                if (condition) {
+                    if (popups.mouseOver() == this.popupID || popups.mouseOver() == undefined) {
+                        this.toggle()
+                        if (this.binding != "") eval(`${this.binding} = this.on`)
+                        if (!this.on && this.radioBinding != "") eval(`${this.radioBinding} = ""`)
+                    }
                 }
             }
             if (this.knobVar) {
-                if (this.knobVar.clickable) this.knobVar.onMouseReleased()
+                if (this.knobVar[this.displayState].clickable) this.knobVar[this.displayState].onMouseReleased()
+            }
+        }
+    }
+
+    onMouseWheel(event) {
+        if (this.hiddenVar == false && this.phantomVar == false) {
+            if (this.knobVar) {
+                if (this.knobVar[this.displayState].scrollable) this.knobVar[this.displayState].onMouseWheel(event)
             }
         }
     }
 
     mouseOver() {
-        if (this.centeredVar) {
-            if (mouseX >= this.x - this.width/2 && mouseX <= this.x + this.width/2 && mouseY >= this.y - this.height/2 && mouseY <= this.y + this.height/2) return true;
-        }
-        else {
-            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
-        }
+        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
         return false;
     }
 
@@ -2564,7 +3839,7 @@ class Label extends Text {
                 onlyStateFunction()
             }
             else {
-                console.error(`Invalid 'when' parameter ${when} for ${variableIdentifierText}. Ensure the input is one of the following: '${whenOptions.join("', '")}'`)
+                logCanvasUIError(`Invalid parameter '${when}' for ${variableIdentifierText}. Ensure the input is one of the following: '${whenOptions.join("', '")}'`)
             }
         }
         else {
@@ -2573,23 +3848,23 @@ class Label extends Text {
         return this;
     }
 
-    background(colour, when) {
+    background(input, when) {
         this.checkWhen(when, () => {
-            this.backgroundVar[when] = colour;
+            this.backgroundVar[when] = input;
         }, () => {
-            this.backgroundVar["default on"] = colour;
-            this.backgroundVar["default off"] = colour;
-            this.backgroundVar["hover on"] = colour;
-            this.backgroundVar["hover off"] = colour;
-            this.backgroundVar["pressed on"] = colour;
-            this.backgroundVar["pressed off"] = colour;
+            this.backgroundVar["default on"] = input;
+            this.backgroundVar["default off"] = input;
+            this.backgroundVar["hover on"] = input;
+            this.backgroundVar["hover off"] = input;
+            this.backgroundVar["pressed on"] = input;
+            this.backgroundVar["pressed off"] = input;
         }, () => {
-            this.backgroundVar[`${when} on`] = colour;
-            this.backgroundVar[`${when} off`] = colour;
+            this.backgroundVar[`${when} on`] = input;
+            this.backgroundVar[`${when} off`] = input;
         }, () => {
-            this.backgroundVar[`default ${when}`] = colour;
-            this.backgroundVar[`hover ${when}`] = colour;
-            this.backgroundVar[`pressed ${when}`] = colour;
+            this.backgroundVar[`default ${when}`] = input;
+            this.backgroundVar[`hover ${when}`] = input;
+            this.backgroundVar[`pressed ${when}`] = input;
         }, "toggle background")
         return this;
     }
@@ -2685,63 +3960,107 @@ class SlideToggle extends Toggle {
         this.cornerRadiusVar = {"default on": [this.height, this.height, this.height, this.height], "default off": [this.height, this.height, this.height, this.height], "hover on": [this.height, this.height, this.height, this.height], "hover off": [this.height, this.height, this.height, this.height], "pressed on": [this.height, this.height, this.height, this.height], "pressed off": [this.height, this.height, this.height, this.height]};
 
         this.knobVar = {
-            "default on": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true), 
-            "default off": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true), 
-            "hover on": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true), 
-            "hover off": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true), 
-            "pressed on": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true), 
-            "pressed off": new Block(0, 0).background(Color.white).cornerRadius(this.height).centered(true)
+            "default on": new Block(height*0.77, height*0.77).background(Color.white).cornerRadius(this.height).centered(true), 
+            "default off": new Block(height*0.77, height*0.77).background(Color.white).cornerRadius(this.height).centered(true), 
+            "hover on": new Block(height*0.77, height*0.77).background(Color.white).cornerRadius(this.height).centered(true), 
+            "hover off": new Block(height*0.77, height*0.77).background(Color.white).cornerRadius(this.height).centered(true), 
+            "pressed on": new Block(height*0.77, height*0.77).background(Color.white).cornerRadius(this.height).centered(true), 
+            "pressed off": new Block(height*0.77, height*0.77).background(Color.white).cornerRadius(this.height).centered(true)
         }
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
 
         if (this.hiddenVar == false) {
             this.update()
             
-            push()
-            if (this.centeredVar) translate(-this.width/2, -this.height/2)
-            // Background
-            fill(this.backgroundVar[this.displayState])
-            stroke(this.borderVar[this.displayState])
-            strokeWeight(this.borderWeightVar[this.displayState])
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
-            
-            // Knob
-            this.knobVar[this.displayState].setWidth(this.height-4)
-            this.knobVar[this.displayState].setHeight(this.height-4)
-            if (this.displayState.split(" ")[1] == "on") {
-                this.knobVar[this.displayState].render(this.x + this.width - this.height/2, this.y + this.height/2)
+            if (context) {
+                // Render on to specified context
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                // Background
+                if (typeof this.backgroundVar[this.displayState] == "function") {
+                    this.backgroundVar[this.displayState](x, y, this.width, this.height, context)
+                    context.noFill()
+                }
+                else {
+                    context.fill(this.backgroundVar[this.displayState])
+                }
+                context.stroke(this.borderVar[this.displayState])
+                context.strokeWeight(this.borderWeightVar[this.displayState])
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
+                context.pop()
+                
+                // Knob
+                // this.knobVar[this.displayState].setWidth(this.padFactor[this.displayState]*this.height)
+                // this.knobVar[this.displayState].setHeight(this.padFactor[this.displayState]*this.height)
+                if (this.displayState.split(" ")[1] == "on") {
+                    this.knobVar[this.displayState].render(this.x + this.width - this.height/2, this.y + this.height/2, context, contextX, contextY)
+                }
+                else {
+                    this.knobVar[this.displayState].render(this.x + this.height/2, this.y + this.height/2, context, contextX, contextY)
+                }
             }
             else {
-                this.knobVar[this.displayState].render(this.x + this.height/2, this.y + this.height/2)
-            }
-            pop()
-
-            if (this.popupVar && this.on) {
-                switch (this.popupVar.side) {
-                    case "left":
-                        this.popupVar.render(this.x, this.y + this.height/2)
-                        break;
-                    case "right":
-                        this.popupVar.render(this.x + this.width, this.y + this.height/2)
-                        break;
-                    case "top":
-                        this.popupVar.render(this.x + this.width/2, this.y)
-                        break;
-                        case "bottom":
-                        this.popupVar.render(this.x + this.width/2, this.y + this.height)
-                        break;
-                    default:
-                        console.error(`Popup has invalid side: ${this.popupVar.side}`)
-                        break;
+                // Render directly on to main canvas
+                push()
+                // Background
+                if (typeof this.backgroundVar[this.displayState] == "function") {
+                    this.backgroundVar[this.displayState](this.x, this.y, this.width, this.height)
+                    noFill()
                 }
+                else {
+                    fill(this.backgroundVar[this.displayState])
+                }
+                stroke(this.borderVar[this.displayState])
+                strokeWeight(this.borderWeightVar[this.displayState])
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
+                pop()
+                
+                // Knob
+                // this.knobVar[this.displayState].setWidth(this.padFactor[this.displayState]*this.height)
+                // this.knobVar[this.displayState].setHeight(this.padFactor[this.displayState]*this.height)
+                if (this.displayState.split(" ")[1] == "on") {
+                    this.knobVar[this.displayState].render(this.x + this.width - this.height/2, this.y + this.height/2)
+                }
+                else {
+                    this.knobVar[this.displayState].render(this.x + this.height/2, this.y + this.height/2)
+                }
+            }
+        }
+
+        if (this.popupVar) {
+            switch (this.popupVar.side) {
+                case "left":
+                    this.popupVar.x = this.x;
+                    this.popupVar.y = this.y + this.height/2;
+                    break;
+                case "right":
+                    this.popupVar.x = this.x + this.width
+                    this.popupVar.y = this.y + this.height/2
+                    break;
+                case "top":
+                    this.popupVar.x = this.x + this.width/2
+                    this.popupVar.y = this.y
+                    break;
+                case "bottom":
+                    this.popupVar.x = this.x + this.width/2
+                    this.popupVar.y = this.y + this.height
+                    break;
             }
         }
     }
 
+    // Can only input elements with setWidth and setHeight functions. ie: Blank, Block, Button, Slider, Slider2D
     knob(elem, when) {
         this.checkWhen(when, () => {
             this.knobVar[when] = elem;
@@ -2771,53 +4090,95 @@ class CheckToggle extends Toggle {
         this.cornerRadiusVar = {"default on": [4, 4, 4, 4], "default off": [4, 4, 4, 4], "hover on": [4, 4, 4, 4], "hover off": [4, 4, 4, 4], "pressed on": [4, 4, 4, 4], "pressed off": [4, 4, 4, 4]};
 
         this.contents = {"default on": undefined, "default off": undefined, "hover on": undefined, "hover off": undefined, "pressed on": undefined, "pressed off": undefined};
-
+    
         this.padFactor = {"default on": 0.8, "default off": 0.8, "hover on": 0.8, "hover off": 0.8, "pressed on": 0.8, "pressed off": 0.8};
     }
 
-    render(x, y) {
-        this.x = x;
-        this.y = y;
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
 
         if (this.hiddenVar == false) {
             this.update()
 
-            push()
-            if (this.centeredVar) translate(-this.width/2, -this.height/2)
-            // Background
-            fill(this.backgroundVar[this.displayState])
-            stroke(this.borderVar[this.displayState])
-            strokeWeight(this.borderWeightVar[this.displayState])
-            rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
-            
-            if (this.contents[this.displayState]) {
-                if (this.contents[this.displayState].phantomVar == false) {
-                    let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
-                    translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
-                    scale(scaleFactor)
-                    this.contents[this.displayState].render(0, 0)
+            if (context) {
+                // Render on to specified context
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+                context.push()
+                // Background
+                if (typeof this.backgroundVar[this.displayState] == "function") {
+                    this.backgroundVar[this.displayState](x, y, this.width, this.height, context)
+                    context.noFill()
                 }
+                else {
+                    context.fill(this.backgroundVar[this.displayState])
+                }
+                context.stroke(this.borderVar[this.displayState])
+                context.strokeWeight(this.borderWeightVar[this.displayState])
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
+                
+                if (this.contents[this.displayState]) {
+                    if (this.contents[this.displayState].phantomVar == false) {
+                        let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+                        context.translate(x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
+                        context.scale(scaleFactor)
+                        this.contents[this.displayState].render(contextX, contextY, context, contextX, contextY)
+                    }
+                }
+                context.pop()
             }
-            pop()
-
-            if (this.popupVar && this.on) {
-                switch (this.popupVar.side) {
-                    case "left":
-                        this.popupVar.render(this.x, this.y + this.height/2)
-                        break;
-                    case "right":
-                        this.popupVar.render(this.x + this.width, this.y + this.height/2)
-                        break;
-                    case "top":
-                        this.popupVar.render(this.x + this.width/2, this.y)
-                        break;
-                        case "bottom":
-                        this.popupVar.render(this.x + this.width/2, this.y + this.height)
-                        break;
-                    default:
-                        console.error(`Popup has invalid side: ${this.popupVar.side}`)
-                        break;
+            else {
+                // Render directly on to main canvas
+                push()
+                // Background
+                if (typeof this.backgroundVar[this.displayState] == "function") {
+                    this.backgroundVar[this.displayState](this.x, this.y, this.width, this.height)
+                    noFill()
                 }
+                else {
+                    fill(this.backgroundVar[this.displayState])
+                }
+                stroke(this.borderVar[this.displayState])
+                strokeWeight(this.borderWeightVar[this.displayState])
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[this.displayState][0], this.cornerRadiusVar[this.displayState][1], this.cornerRadiusVar[this.displayState][2], this.cornerRadiusVar[this.displayState][3])
+                
+                if (this.contents[this.displayState]) {
+                    if (this.contents[this.displayState].phantomVar == false) {
+                        let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+                        translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
+                        scale(scaleFactor)
+                        this.contents[this.displayState].render(0, 0)
+                    }
+                }
+                pop()
+            }
+        }
+
+        if (this.popupVar) {
+            switch (this.popupVar.side) {
+                case "left":
+                    this.popupVar.x = this.x;
+                    this.popupVar.y = this.y + this.height/2;
+                    break;
+                case "right":
+                    this.popupVar.x = this.x + this.width
+                    this.popupVar.y = this.y + this.height/2
+                    break;
+                case "top":
+                    this.popupVar.x = this.x + this.width/2
+                    this.popupVar.y = this.y
+                    break;
+                case "bottom":
+                    this.popupVar.x = this.x + this.width/2
+                    this.popupVar.y = this.y + this.height
+                    break;
             }
         }
     }
@@ -2863,4 +4224,7 @@ class CheckToggle extends Toggle {
         }, "check toggle paddingFactor")
         return this;
     }
+}let doCanvasUIErrorLog = true;
+function logCanvasUIError(message) {
+    if (doCanvasUIErrorLog) console.error(message)
 }
