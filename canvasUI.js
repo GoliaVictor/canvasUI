@@ -1,4 +1,3 @@
-let p = new p5()
 class Blank {
     constructor(width=0, height=0) {
         this.x;
@@ -499,8 +498,7 @@ class Blank {
         }, "button paddingFactor")
         return this;
     }
-}
-let doHotkeys = true;
+}let doHotkeys = true;
 let doHotMouseDown = true;
 let doHotMouseUp = true;
 
@@ -848,7 +846,8 @@ class Icon {
 
         this.binding = "";
         this.value = {x: 0, y: 0};
-
+        
+        this.aspectRatioVar = "fit"
         this.width = width;
         this.height = height;
         p.loadImage(path, img => {
@@ -888,19 +887,37 @@ class Icon {
                 context.push()
                 if (this.contents) {
                     this.context.clear()
-                    if (this.preserveAspectRatioVar) {
-                        if (this.width > this.height) {
-                            // Align size with width
-                            this.context.image(this.contents, this.value.x, this.value.y, this.width, this.width/this.contents.width*this.contents.height)
-                        }
-                        else {
-                            // Align size with height
-                            this.context.image(this.contents, this.value.x, this.value.y, this.height/this.contents.height*this.contents.width, this.height)
-                        }
+                    switch (this.aspectRatioVar) {
+                        case "fit":
+                            // fit
+                            if (this.width < this.height) {
+                                // Align size with width
+                                let newHeight = this.width/this.contents.width*this.contents.height;
+                                this.context.image(this.contents, this.value.x, (this.height-newHeight)/2+this.value.y, this.width, newHeight)
+                            }
+                            else {
+                                // Align size with height
+                                let newWidth = this.height/this.contents.height*this.contents.width;
+                                this.context.image(this.contents, (this.width-newWidth)/2+this.value.x, this.value.y, newWidth, this.height)
+                            }
+                            break;
+                        case "stretch":
+                            this.context.image(this.contents, this.value.x, this.value.y, this.width, this.height)
+                            break;
+                        case "fill":
+                            if (this.width > this.height) {
+                                // Align size with width
+                                let newHeight = this.width/this.contents.width*this.contents.height;
+                                this.context.image(this.contents, this.value.x, (this.height-newHeight)/2+this.value.y, this.width, newHeight)
+                            }
+                            else {
+                                // Align size with height
+                                let newWidth = this.height/this.contents.height*this.contents.width;
+                                this.context.image(this.contents, (this.width-newWidth)/2+this.value.x, this.value.y, newWidth, this.height)
+                            }
+                            break;
                     }
-                    else {
-                        this.context.image(this.contents, this.value.x, this.value.y, this.width, this.height)
-                    }
+                    // fill
                     this.roundContextCorners()
                     context.image(this.context, x, y, this.width, this.height)
                 }
@@ -916,23 +933,38 @@ class Icon {
                 push()
                 if (this.contents) {
                     this.context.clear()
-                    if (this.preserveAspectRatioVar) {
-                        if (this.width > this.height) {
-                            // Align size with width
-                            this.context.image(this.contents, this.value.x, this.value.y, this.width, this.width/this.contents.width*this.contents.height)
-                        }
-                        else {
-                            // Align size with height
-                            console.log(this.value.x, this.value.y)
-                            this.context.image(this.contents, this.value.x, this.value.y, this.height/this.contents.height*this.contents.width, this.height)
-                        }
-                    }
-                    else {
-                        console.log(this.value.x, this.value.y)
-                        this.context.image(this.contents, this.value.x, this.value.y, this.width, this.height)
+                    switch (this.aspectRatioVar) {
+                        case "fit":
+                            // fit
+                            if (this.width < this.height) {
+                                // Align size with width
+                                let newHeight = this.width/this.contents.width*this.contents.height;
+                                this.context.image(this.contents, this.value.x, (this.height-newHeight)/2+this.value.y, this.width, newHeight)
+                            }
+                            else {
+                                // Align size with height
+                                let newWidth = this.height/this.contents.height*this.contents.width;
+                                this.context.image(this.contents, (this.width-newWidth)/2+this.value.x, this.value.y, newWidth, this.height)
+                            }
+                            break;
+                        case "stretch":
+                            this.context.image(this.contents, this.value.x, this.value.y, this.width, this.height)
+                            break;
+                        case "fill":
+                            if (this.width > this.height) {
+                                // Align size with width
+                                let newHeight = this.width/this.contents.width*this.contents.height;
+                                this.context.image(this.contents, this.value.x, (this.height-newHeight)/2+this.value.y, this.width, newHeight)
+                            }
+                            else {
+                                // Align size with height
+                                let newWidth = this.height/this.contents.height*this.contents.width;
+                                this.context.image(this.contents, (this.width-newWidth)/2+this.value.x, this.value.y, newWidth, this.height)
+                            }
+                            break;
                     }
                     this.roundContextCorners()
-                    image(this.context, this.x, this.y, this.width, this.height)
+                    image(this.context, x, y, this.width, this.height)
                 }
                 
                 noFill()
@@ -971,8 +1003,14 @@ class Icon {
         this.context.height = this.height;
         return this;
     }
-    preserveAspectRatio(value=true) {
-        this.preserveAspectRatioVar = value;
+    // value == "top-left" || value == "top" || value == "top-right" || value == "right" || value == "bottom-right" || value == "bottom" || value == "bottom-left" || value == "left"
+    aspectRatio(value) {
+        if (value == "fit" || value == "fill" || value == "stretch") {
+            this.aspectRatioVar = value;
+        }
+        else {
+            logCanvasUIError(`Invalid aspect ratio: '${value}'. Ensure alignment is either 'fit', 'fill', or 'stretch'.`)
+        }
         return this;
     }
 
@@ -1002,43 +1040,52 @@ class Icon {
 
     roundContextCorners() {
         this.context.loadPixels()
-        if (this.cornerRadiusVar[0] == this.cornerRadiusVar[1] && this.cornerRadiusVar[1] == this.cornerRadiusVar[2] && this.cornerRadiusVar[2] == this.cornerRadiusVar[3]) {
-            for (let row=0.5; row < this.cornerRadiusVar[0]; row++) {
-                for (let col=0.5; col < this.cornerRadiusVar[0]; col++) {
-                    if ((row-this.cornerRadiusVar[0])**2 + (col-this.cornerRadiusVar[0])**2 > (this.cornerRadiusVar[0]-1)**2) {
-                        this.context.set(col-0.5, row-0.5, Color.transparent)
-                        this.context.set(this.width-(col-0.5), row-0.5, Color.transparent)
+        let radii = this.cornerRadiusVar;
+        for (let i = 0; i < radii.length; i++) {
+            if (this.width < this.height && radii[i] > this.width/2) {
+                radii[i] = this.width/2;
+            }
+            else if (this.width > this.height && radii[i] > this.height/2) {
+                radii[i] = this.height/2;
+            }
+        }
+        if (radii[0] == radii[1] && radii[1] == radii[2] && radii[2] == radii[3]) {
+            for (let row=0.5; row < radii[0]; row++) {
+                for (let col=0.5; col < radii[0]; col++) {
+                    if ((row-radii[0])**2 + (col-radii[0])**2 > radii[0]**2) {
+                        this.context.set((col-0.5), (row-0.5), Color.transparent)
+                        this.context.set(this.width-(col-0.5), (row-0.5), Color.transparent)
                         this.context.set(this.width-(col-0.5), this.height-(row-0.5), Color.transparent)
-                        this.context.set(col-0.5, this.height-(row-0.5), Color.transparent)
+                        this.context.set((col-0.5), this.height-(row-0.5), Color.transparent)
                     }
                 }
             }
         }
         else {
-            for (let row=0.5; row < this.cornerRadiusVar[0]; row++) {
-                for (let col=0.5; col < this.cornerRadiusVar[0]; col++) {
-                    if ((row-this.cornerRadiusVar[0])**2 + (col-this.cornerRadiusVar[0])**2 > (this.cornerRadiusVar[0]-1)**2) {
+            for (let row=0.5; row < radii[0]; row++) {
+                for (let col=0.5; col < radii[0]; col++) {
+                    if ((row-radii[0])**2 + (col-radii[0])**2 > radii[0]**2) {
                         this.context.set(col-0.5, row-0.5, Color.transparent)
                     }
                 }
             }
-            for (let row=0.5; row < this.cornerRadiusVar[1]; row++) {
-                for (let col=0.5; col < this.cornerRadiusVar[1]; col++) {
-                    if ((row-this.cornerRadiusVar[1])**2 + (col-this.cornerRadiusVar[1])**2 > (this.cornerRadiusVar[1]-1)**2) {
+            for (let row=0.5; row < radii[1]; row++) {
+                for (let col=0.5; col < radii[1]; col++) {
+                    if ((row-radii[1])**2 + (col-radii[1])**2 > radii[1]**2) {
                         this.context.set(this.width-(col-0.5), row-0.5, Color.transparent)
                     }
                 }
             }
-            for (let row=0.5; row < this.cornerRadiusVar[2]; row++) {
-                for (let col=0.5; col < this.cornerRadiusVar[2]; col++) {
-                    if ((row-this.cornerRadiusVar[2])**2 + (col-this.cornerRadiusVar[2])**2 > (this.cornerRadiusVar[2]-1)**2) {
+            for (let row=0.5; row < radii[2]; row++) {
+                for (let col=0.5; col < radii[2]; col++) {
+                    if ((row-radii[2])**2 + (col-radii[2])**2 > radii[2]**2) {
                         this.context.set(this.width-(col-0.5), this.height-(row-0.5), Color.transparent)
                     }
                 }
             }
-            for (let row=0.5; row < this.cornerRadiusVar[3]; row++) {
-                for (let col=0.5; col < this.cornerRadiusVar[3]; col++) {
-                    if ((row-this.cornerRadiusVar[3])**2 + (col-this.cornerRadiusVar[3])**2 > (this.cornerRadiusVar[3]-1)**2) {
+            for (let row=0.5; row < radii[3]; row++) {
+                for (let col=0.5; col < radii[3]; col++) {
+                    if ((row-radii[3])**2 + (col-radii[3])**2 > radii[3]**2) {
                         this.context.set(col-0.5, this.height-(row-0.5), Color.transparent)
                     }
                 }
