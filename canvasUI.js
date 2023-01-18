@@ -3436,118 +3436,145 @@ class Label extends Text {
         }
     }
 
-    onKeyPressed() {
+    async onKeyPressed() {
         if (this.hiddenVar == false && this.phantomVar == false && this.lockedVar == false) {
             if (this.editing) {
-                switch (key) {
-                    case "ArrowLeft":
-                        if (this.cursorAfter.length > 0) {
-                            this.cursorAfter = this.cursorAfter.slice(0, -1);
-                            this.showingCursor = true;
-                            this.lastToggledCursor = new Date();
-                        }
-                        break;
-                    case "ArrowRight":
-                        if (this.cursorAfter.length < this.t.length) {
-                            this.cursorAfter = this.t.slice(0, this.cursorAfter.length+1);
-                            this.showingCursor = true;
-                            this.lastToggledCursor = new Date();
-                        }
-                        break;
-                    case "ArrowUp":
-                        {
-                            push()
-                            textSize(this.tSize)
-                            if (this.emphasisVar) textStyle(this.emphasisVar)
-                            if (this.fontVar) textFont(this.fontVar)
-                            let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
-                            if (lineNumber > 0) {
-                                let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
-                                let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
-                                let lineY =  this.y + this.tSize*(this.pFactor + lineNumber+0.5);
-                                this.cursorAfter = this.getClosestCursorAfter(lineX, lineY-this.tSize)
-                                this.showingCursor = true;
-                                this.lastToggledCursor = new Date();
-                            }
-                            pop()
-                        }
-                        break;
-                    case "ArrowDown":
-                        {
-                            push()
-                            textSize(this.tSize)
-                            if (this.emphasisVar) textStyle(this.emphasisVar)
-                            if (this.fontVar) textFont(this.fontVar)
-                            let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
-                            if (lineNumber < (this.t.match(/\n/g) || []).length) {
-                                let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
-                                let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
-                                let lineY =  this.y + this.tSize*(this.pFactor + lineNumber+0.5);
-                                this.cursorAfter = this.getClosestCursorAfter(lineX, lineY+this.tSize)
-                                this.showingCursor = true;
-                                this.lastToggledCursor = new Date();
-                            }
-                            pop()
-                        }
-                        break;
-                    case "Backspace":
-                        push()
-                        textSize(this.tSize)
-                        if (this.emphasisVar) textStyle(this.emphasisVar)
-                        if (this.fontVar) textFont(this.fontVar)
-                        if (this.cursorAfter != "") {
-                            let lines = this.t.split("\n")
-                            let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
-                            let cursorAfterArray = this.cursorAfter.split("\n");
-                            let cursorAfterOnThisLine = cursorAfterArray[lineNumber]
-                            if (cursorAfterOnThisLine == "" && textWidth(lines[lineNumber])+textWidth(lines[lineNumber-1]) > this.maxWidthVar) break;
-                            this.t = this.t.slice(0, this.cursorAfter.length-1) + this.t.slice(this.cursorAfter.length);
-                            this.cursorAfter = this.cursorAfter.slice(0, -1);
-                            this.showingCursor = true;
-                            this.lastToggledCursor = new Date();
-                            this.edited = true;
-                        }
-                        pop()
-                        break;
-                    case "Enter":
-                        if (this.doMultiLine && keyIsDown(SHIFT)) {
-                            if (this.height + this.tSize <= this.maxHeightVar) {
-                                this.t = this.t.slice(0, this.cursorAfter.length) + "\n" + this.t.slice(this.cursorAfter.length)
-                                this.cursorAfter += "\n"
-                                this.showingCursor = true;
-                                this.lastToggledCursor = new Date();
-                                this.edited = true;
-                            }
-                        }
-                        else {
-                            this.editing = false;
-                            doHotkeys = true;
-                            doHotMouseDown = true;
-                            doHotMouseUp = true;
-                            this.edited = false;
-                            if (this.binding != "") {
-                                eval(`${this.binding} = this.t`)
-                            }
-                        }
-                        break;
-                    default:
-                        if ((keyCode == 32) || (48 <= keyCode && keyCode <= 90) || (96 <= keyCode && keyCode <= 111) || (186 <= keyCode && keyCode <= 222)) {
+                // Check if Control or Meta is pressed
+                if (keyIsDown(17) || keyIsDown(91) || keyIsDown(93)) {
+                    console.log("yo1")
+                    // Check if v is pressed
+                    if (keyCode == 86) {
+                        console.log("yo")
+                        if (navigator.clipboard) {
+                            let textToAdd = await navigator.clipboard.readText();
                             let lines = this.t.split("\n")
                             let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
                             push()
                             textSize(this.tSize)
                             if (this.emphasisVar) textStyle(this.emphasisVar)
                             if (this.fontVar) textFont(this.fontVar)
-                            if (textWidth(lines[lineNumber])+textWidth(key) <= this.maxWidthVar) {
-                                this.t = this.t.slice(0, this.cursorAfter.length) + key + this.t.slice(this.cursorAfter.length)
-                                this.cursorAfter += key;
+                            if (textWidth(lines[lineNumber])+textWidth(textToAdd) <= this.maxWidthVar) {
+                                this.t = this.t.slice(0, this.cursorAfter.length) + textToAdd + this.t.slice(this.cursorAfter.length)
+                                this.cursorAfter += textToAdd;
                                 this.showingCursor = true;
                                 this.lastToggledCursor = new Date();
                                 this.edited = true;
                             }
                             pop()
                         }
-                        break;
+                    }
+                }
+                else {
+                    switch (key) {
+                        case "ArrowLeft":
+                            if (this.cursorAfter.length > 0) {
+                                this.cursorAfter = this.cursorAfter.slice(0, -1);
+                                this.showingCursor = true;
+                                this.lastToggledCursor = new Date();
+                            }
+                            break;
+                        case "ArrowRight":
+                            if (this.cursorAfter.length < this.t.length) {
+                                this.cursorAfter = this.t.slice(0, this.cursorAfter.length+1);
+                                this.showingCursor = true;
+                                this.lastToggledCursor = new Date();
+                            }
+                            break;
+                        case "ArrowUp":
+                            {
+                                push()
+                                textSize(this.tSize)
+                                if (this.emphasisVar) textStyle(this.emphasisVar)
+                                if (this.fontVar) textFont(this.fontVar)
+                                let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
+                                if (lineNumber > 0) {
+                                    let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
+                                    let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
+                                    let lineY =  this.y + this.tSize*(this.pFactor + lineNumber+0.5);
+                                    this.cursorAfter = this.getClosestCursorAfter(lineX, lineY-this.tSize)
+                                    this.showingCursor = true;
+                                    this.lastToggledCursor = new Date();
+                                }
+                                pop()
+                            }
+                            break;
+                        case "ArrowDown":
+                            {
+                                push()
+                                textSize(this.tSize)
+                                if (this.emphasisVar) textStyle(this.emphasisVar)
+                                if (this.fontVar) textFont(this.fontVar)
+                                let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
+                                if (lineNumber < (this.t.match(/\n/g) || []).length) {
+                                    let cursorAfterOnThisLine = this.cursorAfter.split("\n")[lineNumber]
+                                    let lineX = this.x+textWidth(cursorAfterOnThisLine)+this.tSize*this.pFactor;
+                                    let lineY =  this.y + this.tSize*(this.pFactor + lineNumber+0.5);
+                                    this.cursorAfter = this.getClosestCursorAfter(lineX, lineY+this.tSize)
+                                    this.showingCursor = true;
+                                    this.lastToggledCursor = new Date();
+                                }
+                                pop()
+                            }
+                            break;
+                        case "Backspace":
+                            push()
+                            textSize(this.tSize)
+                            if (this.emphasisVar) textStyle(this.emphasisVar)
+                            if (this.fontVar) textFont(this.fontVar)
+                            if (this.cursorAfter != "") {
+                                let lines = this.t.split("\n")
+                                let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
+                                let cursorAfterArray = this.cursorAfter.split("\n");
+                                let cursorAfterOnThisLine = cursorAfterArray[lineNumber]
+                                if (cursorAfterOnThisLine == "" && textWidth(lines[lineNumber])+textWidth(lines[lineNumber-1]) > this.maxWidthVar) break;
+                                this.t = this.t.slice(0, this.cursorAfter.length-1) + this.t.slice(this.cursorAfter.length);
+                                this.cursorAfter = this.cursorAfter.slice(0, -1);
+                                this.showingCursor = true;
+                                this.lastToggledCursor = new Date();
+                                this.edited = true;
+                            }
+                            pop()
+                            break;
+                        case "Enter":
+                            if (this.doMultiLine && keyIsDown(SHIFT)) {
+                                if (this.height + this.tSize <= this.maxHeightVar) {
+                                    this.t = this.t.slice(0, this.cursorAfter.length) + "\n" + this.t.slice(this.cursorAfter.length)
+                                    this.cursorAfter += "\n"
+                                    this.showingCursor = true;
+                                    this.lastToggledCursor = new Date();
+                                    this.edited = true;
+                                }
+                            }
+                            else {
+                                this.editing = false;
+                                doHotkeys = true;
+                                doHotMouseDown = true;
+                                doHotMouseUp = true;
+                                this.edited = false;
+                                if (this.binding != "") {
+                                    eval(`${this.binding} = this.t`)
+                                }
+                            }
+                            break;
+                        default:
+                            if ((keyCode == 32) || (48 <= keyCode && keyCode <= 90) || (96 <= keyCode && keyCode <= 111) || (186 <= keyCode && keyCode <= 222)) {
+                                let lines = this.t.split("\n")
+                                let lineNumber = (this.cursorAfter.match(/\n/g) || []).length
+                                push()
+                                textSize(this.tSize)
+                                if (this.emphasisVar) textStyle(this.emphasisVar)
+                                if (this.fontVar) textFont(this.fontVar)
+                                if (textWidth(lines[lineNumber])+textWidth(key) <= this.maxWidthVar) {
+                                    this.t = this.t.slice(0, this.cursorAfter.length) + key + this.t.slice(this.cursorAfter.length)
+                                    this.cursorAfter += key;
+                                    this.showingCursor = true;
+                                    this.lastToggledCursor = new Date();
+                                    this.edited = true;
+                                }
+                                pop()
+                            }
+                            break;
+                    }
                 }
             }
         }
