@@ -1370,6 +1370,7 @@ class Icon {
         else {
             logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
         }
+        return this;
     }
 
     hidden(value=true) {
