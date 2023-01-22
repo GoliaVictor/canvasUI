@@ -1,4 +1,83 @@
-class Blank {
+class Base {
+    constructor(width=0, height=0) {
+        this.x;
+        this.y;
+        this.width = width;
+        this.height = height;
+
+        this.clickable = false;
+        this.typeable = false;
+        this.scrollable = false;
+        this.alignment = "leading";
+        this.hiddenVar = false;
+        this.phantomVar = false;
+
+        this.centeredVar = false;
+        this.lockedVar = false;
+
+        this.popupID = "";
+        this.canSelect = true;
+    }
+
+    pipe(popupID, canSelect) {
+        if (popupID !== undefined) this.popupID = popupID;
+        if (canSelect !== undefined) this.canSelect = canSelect;
+        if (this.contents[this.displayState]) if (this.contents[this.displayState].clickable) this.contents[this.displayState].pipe(popupID, canSelect)
+    }
+
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
+
+        if (this.hiddenVar == false) {
+            if (context) {
+
+            }
+            else {
+                
+            }
+        }
+    }
+
+    setWidth(value) {
+        this.width = value;
+        return this;
+    }
+    setHeight(value) {
+        this.height = value;
+        return this;
+    }
+
+    align(value) {
+        if (value == "leading" || value == "center" || value == "trailing") {
+            this.alignment = value;
+        }
+        else {
+            logCanvasUIError(`Invalid alignment: '${value}'. Ensure alignment is either 'leading', 'center', or 'trailing'.`)   
+        }
+        return this;
+    }
+
+    hidden(value=true) {
+        this.hiddenVar = value;
+        return this;
+    }
+    phantom(value=true) {
+        this.phantomVar = value;
+        return this;
+    }
+    centered(value=true) {
+        this.centeredVar = value;
+        return this;
+    }
+
+}class Blank {
     constructor(width=0, height=0) {
         this.x;
         this.y;
@@ -189,7 +268,7 @@ class Blank {
         this.clickable = true;
         this.typeable = false;
         this.scrollable = false;
-        this.alignment = "center";
+        this.alignment = "leading";
         this.hiddenVar = false;
         this.phantomVar = false;
 
@@ -206,7 +285,7 @@ class Blank {
         this.cornerRadiusVar = {"default": [6, 6, 6, 6], "hover": [6, 6, 6, 6], "pressed": [6, 6, 6, 6]};
 
         this.contents = {"default": undefined, "hover": undefined, "pressed": undefined,};
-        this.padFactor = {"default": 0.8, "hover": 0.8, "pressed": 0.8};
+        this.pad = {"default": 0, "hover": 0, "pressed": 0};
 
         this.popupID = "";
         this.canSelect = true;
@@ -269,7 +348,7 @@ class Blank {
                 
                 if (this.contents[this.displayState]) {
                     if (this.contents[this.displayState].phantomVar == false) {
-                        let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+                        let scaleFactor = Math.min((this.width - 2*this.pad[this.displayState])/this.contents[this.displayState].width, (this.height - 2*this.pad[this.displayState])/this.contents[this.displayState].height)
                         context.translate(x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
                         context.scale(scaleFactor)
                         this.contents[this.displayState].render(0, 0)
@@ -294,7 +373,7 @@ class Blank {
                 
                 if (this.contents[this.displayState]) {
                     if (this.contents[this.displayState].phantomVar == false) {
-                        let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+                        let scaleFactor = Math.min((this.width - 2*this.pad[this.displayState])/this.contents[this.displayState].width, (this.height - 2*this.pad[this.displayState])/this.contents[this.displayState].height)
                         translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
                         scale(scaleFactor)
                         this.contents[this.displayState].render(0, 0)
@@ -488,14 +567,14 @@ class Blank {
         return this;
     }
 
-    paddingFactor(value, when) {
+    padding(value, when) {
         this.checkWhen(when, () => {
-            this.padFactor[when] = value;
+            this.pad[when] = value;
         }, () => {
-            this.padFactor["default"] = value;
-            this.padFactor["hover"] = value;
-            this.padFactor["pressed"] = value;
-        }, "button paddingFactor")
+            this.pad["default"] = value;
+            this.pad["hover"] = value;
+            this.pad["pressed"] = value;
+        }, "button padding")
         return this;
     }
 }let doHotkeys = true;
@@ -561,7 +640,7 @@ class Icon {
         this.clickable = false;
         this.typeable = false;
         this.scrollable = false;
-        this.alignment = "center";
+        this.alignment = "leading";
         this.hiddenVar = false;
         this.phantomVar = false;
 
@@ -1650,6 +1729,7 @@ class Popup {
         return false;
     }
 }let selectedScrollView = ""
+let p = new p5();
 
 class ScrollView {
     constructor(width, height) {
@@ -1796,29 +1876,34 @@ class ScrollView {
             if (this.mouseOver() && this.canSelect) selectedScrollView = this.id;
             if (this.contents.scrollable) this.contents.onMouseWheel(event)
             if (this.mouseOver() && this.canSelect && selectedScrollView == this.id) {
-                let proposedX = 0;
-                let proposedY = 0;
 
-                if (this.widthSet) {
-                    proposedX = this.value.x-event.deltaX*this.sensitivityVar.x;
-                    if (proposedX < this.width-this.contents.width) {
-                        proposedX = this.width-this.contents.width;
-                    }
-                    else if (proposedX > 0) {
-                        proposedX = 0;
-                    }
-                }
-                if (this.heightSet) {
-                    proposedY = this.value.y-event.deltaY*this.sensitivityVar.y;
-                    if (proposedY < this.height-this.contents.height) {
-                        proposedY = this.height-this.contents.height;
-                    }
-                    else if (proposedY > 0) {
-                        proposedY = 0;
-                    }
-                }
+                if (this.widthSet || this.heightSet) {
+                    let proposedX = 0;
+                    let proposedY = 0;
 
-                this.set({x: proposedX, y: proposedY})
+                    // make work for when the content is smaller than the scrollview
+                    
+                    if (this.widthSet) {
+                        proposedX = this.value.x-event.deltaX*this.sensitivityVar.x;
+                        if (proposedX < this.width-this.contents.width) {
+                            proposedX = this.width-this.contents.width;
+                        }
+                        else if (proposedX > 0) {
+                            proposedX = 0;
+                        }
+                    }
+                    if (this.heightSet) {
+                        proposedY = this.value.y-event.deltaY*this.sensitivityVar.y;
+                        if (proposedY < this.height-this.contents.height) {
+                            proposedY = this.height-this.contents.height;
+                        }
+                        else if (proposedY > 0) {
+                            proposedY = 0;
+                        }
+                    }
+    
+                    this.set({x: proposedX, y: proposedY})
+                }
             }
         }
     }
@@ -1933,7 +2018,7 @@ class ScrollView {
         this.clickable = true;
         this.typeable = true;
         this.scrollable = true;
-        this.alignment = "center";
+        this.alignment = "leading";
         this.hiddenVar = false;
         this.phantomVar = false;
 
@@ -2611,7 +2696,9 @@ class VSlider extends Slider {
         this.height = 0;
         this.contents = [];
         this.pad = 0;
-        this.spacingVar = 15;
+
+        this.minWidthVar = 2*this.pad;
+        this.minHeightVar = 2*this.pad;
         
         this.clickable = true;
         this.typeable = true;
@@ -2649,8 +2736,12 @@ class VSlider extends Slider {
         return this;
     }
 
-    spacing(value) {
-        this.spacingVar = value;
+    minWidth(value) {
+        this.minWidthVar = value;
+        return this;
+    }
+    minHeight(value) {
+        this.minHeightVar = value;
         return this;
     }
 
@@ -2738,7 +2829,14 @@ class VSlider extends Slider {
     }
 
     mouseOver() {
-        if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        if (typeof this.backgroundVar == "function" || this.backgroundVar.length <= 3 || (this.backgroundVar.length > 3 && this.backgroundVar[3] != 0)) {
+            if (mouseX >= this.x && mouseX <= this.x + this.width && mouseY >= this.y && mouseY <= this.y + this.height) return true;
+        }
+        else {
+            for (let n = 0; n < this.contents.length; n++) {
+                if (this.contents[n].mouseOver()) return true;
+            }
+        }
         return false;
     }
 }
@@ -2746,6 +2844,12 @@ class VSlider extends Slider {
 class VStack extends Stack {
     constructor() {
         super();
+        this.spacingVar = 15;
+    }
+
+    spacing(value) {
+        this.spacingVar = value;
+        return this;
     }
 
     calcDimensions() {
@@ -2763,6 +2867,9 @@ class VStack extends Stack {
         if (i > 0) {
             this.height -= this.spacingVar;
         }
+
+        this.width = Math.max(this.width, this.minWidthVar)
+        this.height = Math.max(this.height, this.minHeightVar)
     }
 
     render(x, y, context, contextX, contextY) {
@@ -2852,6 +2959,12 @@ class VStack extends Stack {
 class HStack extends Stack {
     constructor() {
         super();
+        this.spacingVar = 15;
+    }
+
+    spacing(value) {
+        this.spacingVar = value;
+        return this;
     }
 
     calcDimensions() {
@@ -2869,6 +2982,9 @@ class HStack extends Stack {
         if (i > 0) {
             this.width -= this.spacingVar;
         }
+
+        this.width = Math.max(this.width, this.minWidthVar)
+        this.height = Math.max(this.height, this.minHeightVar)
     }
 
     render(x, y, context, contextX, contextY) {
@@ -2953,6 +3069,98 @@ class HStack extends Stack {
             }
         }
     }
+}
+
+class ZStack extends Stack {
+    constructor() {
+        super();
+    }
+
+    calcDimensions() {
+        this.width = 0;
+        this.height = 0;
+        for (let n = 0; n < this.contents.length; n++) {
+            let elem = this.contents[n];
+            if (elem.phantomVar == false) {
+                this.height = Math.max(this.height, elem.height)
+                this.width = Math.max(this.width, elem.width)
+            }
+        }
+        this.width += 2*this.pad
+        this.height += 2*this.pad
+
+        this.width = Math.max(this.width, this.minWidthVar)
+        this.height = Math.max(this.height, this.minHeightVar)
+    }
+
+    render(x, y, context, contextX, contextY) {
+        if (this.centeredVar) {
+            if (x !== undefined) this.x = x-this.width/2;
+            if (y !== undefined) this.y = y-this.height/2;
+        }
+        else {
+            if (x !== undefined) this.x = x;
+            if (y !== undefined) this.y = y;
+        }
+        this.calcDimensions()
+
+        if (this.hiddenVar == false) {
+            let pipeCanSelect = this.canSelect;
+            for (let n = this.contents.length-1; n >= 0; n--) {
+                let elem = this.contents[n]
+                elem.pipe(undefined, pipeCanSelect)
+                if (elem.clickable && elem.mouseOver()) pipeCanSelect = false;
+            }
+
+            if (context) {
+                // Render on to specified context
+                let x = this.x - contextX;
+                let y = this.y - contextY;
+
+                context.push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(x, y, this.width, this.height, context)
+                    context.noFill()
+                }
+                else {
+                    context.fill(this.backgroundVar)
+                }
+                context.stroke(this.borderVar)
+                context.strokeWeight(this.borderWeightVar)
+                context.rect(x, y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                context.pop()
+
+                for (let n = 0; n < this.contents.length; n++) {
+                    let elem = this.contents[n]
+                    if (elem.phantomVar == false) {
+                        this.contents[n].render(this.x + this.pad, this.y + this.pad, context, contextX, contextY)
+                    }
+                }
+            }
+            else {
+                // Render directly on to main canvas
+                push()
+                if (typeof this.backgroundVar == "function") {
+                    this.backgroundVar(this.x, this.y, this.width, this.height)
+                    noFill()
+                }
+                else {
+                    fill(this.backgroundVar)
+                }
+                stroke(this.borderVar)
+                strokeWeight(this.borderWeightVar)
+                rect(this.x, this.y, this.width, this.height, this.cornerRadiusVar[0], this.cornerRadiusVar[1], this.cornerRadiusVar[2], this.cornerRadiusVar[3])
+                pop()
+
+                for (let n = 0; n < this.contents.length; n++) {
+                    let elem = this.contents[n]
+                    if (elem.phantomVar == false) {
+                        this.contents[n].render(this.x + this.pad, this.y + this.pad)
+                    }
+                }
+            }
+        }
+    }
 }class Text {
     constructor(text="Text") {
         this.x;
@@ -2960,7 +3168,7 @@ class HStack extends Stack {
         this.t = `${text}`;
         this.tSize = 18;
         this.binding = "";
-        this.pFactor = 0;
+        this.pad = 0;
         this.width = 0;
         this.height = 0;
 
@@ -2971,11 +3179,9 @@ class HStack extends Stack {
         this.typeable = false;
         this.scrollable = false;
         this.alignment = "leading";
+        this.centeredVar = false;
         this.hiddenVar = false;
         this.phantomVar = false;
-
-
-        this.centeredVar = false;
 
         // Default styling config
         this.backgroundVar = Color.transparent;
@@ -3045,9 +3251,9 @@ class HStack extends Stack {
                 if (context.textWidth(lines[n]) > context.textWidth(lines[longestLineIndex])) longestLineIndex = n;
             }
             let tWidth = context.textWidth(lines[longestLineIndex])
-            this.width = Math.max(this.minWidthVar, tWidth + this.tSize*this.pFactor*2)
+            this.width = Math.max(this.minWidthVar, tWidth + this.pad*2)
             context.textAlign(LEFT, TOP)
-            this.height = Math.max(this.minHeightVar, this.tSize*(lines.length + this.pFactor*2))
+            this.height = Math.max(this.minHeightVar, this.tSize*lines.length + this.pad)
             
             if (this.hiddenVar == false) {
                 if (typeof this.backgroundVar == "function") {
@@ -3065,7 +3271,7 @@ class HStack extends Stack {
                 context.stroke(this.textBorderVar)
                 context.strokeWeight(this.textBorderWeightVar)
                 for (let n = 0; n < lines.length; n++) {
-                    context.text(lines[n], x+this.tSize*this.pFactor, y + this.tSize*(this.pFactor+n))
+                    context.text(lines[n], x+this.pad, y + this.tSize*n + this.pad)
                 }
             }
             context.pop();
@@ -3082,9 +3288,9 @@ class HStack extends Stack {
                 if (textWidth(lines[n]) > textWidth(lines[longestLineIndex])) longestLineIndex = n;
             }
             let tWidth = textWidth(lines[longestLineIndex])
-            this.width = Math.max(this.minWidthVar, tWidth + this.tSize*this.pFactor*2)
+            this.width = Math.max(this.minWidthVar, tWidth + this.pad*2)
             textAlign(LEFT, TOP)
-            this.height = Math.max(this.minHeightVar, this.tSize*(lines.length + this.pFactor*2))
+            this.height = Math.max(this.minHeightVar, this.tSize*lines.length + this.pad*2)
             
             if (this.hiddenVar == false) {
                 if (typeof this.backgroundVar == "function") {
@@ -3102,7 +3308,7 @@ class HStack extends Stack {
                 stroke(this.textBorderVar)
                 strokeWeight(this.textBorderWeightVar)
                 for (let n = 0; n < lines.length; n++) {
-                    text(lines[n], this.x+this.tSize*this.pFactor, this.y + this.tSize*(this.pFactor+n))
+                    text(lines[n], this.x+this.pad, this.y + this.tSize*n + this.pad)
                 }
             }
             pop();
@@ -3171,8 +3377,8 @@ class HStack extends Stack {
         return this;
     }
 
-    paddingFactor(value) {
-        this.pFactor = value;
+    padding(value) {
+        this.pad = value;
         return this;
     }
 
@@ -3192,7 +3398,7 @@ class Title extends Text {
         super(text);
 
         // Default styling config
-        this.paddingFactor(0)
+        this.padding(0)
         this.emphasis("bold")
         this.textSize(39)
     }
@@ -3204,7 +3410,7 @@ class Label extends Text {
 
         // Default styling config
         this.textSize(16)
-        this.paddingFactor(0)
+        this.padding(0)
         this.emphasis("bold")
         this.textColour(Color.secondary)
     }
@@ -4076,8 +4282,6 @@ class SlideToggle extends Toggle {
                 context.pop()
                 
                 // Knob
-                // this.knobVar[this.displayState].setWidth(this.padFactor[this.displayState]*this.height)
-                // this.knobVar[this.displayState].setHeight(this.padFactor[this.displayState]*this.height)
                 if (this.displayState.split(" ")[1] == "on") {
                     this.knobVar[this.displayState].render(this.x + this.width - this.height/2, this.y + this.height/2, context, contextX, contextY)
                 }
@@ -4102,8 +4306,6 @@ class SlideToggle extends Toggle {
                 pop()
                 
                 // Knob
-                // this.knobVar[this.displayState].setWidth(this.padFactor[this.displayState]*this.height)
-                // this.knobVar[this.displayState].setHeight(this.padFactor[this.displayState]*this.height)
                 if (this.displayState.split(" ")[1] == "on") {
                     this.knobVar[this.displayState].render(this.x + this.width - this.height/2, this.y + this.height/2)
                 }
@@ -4166,7 +4368,7 @@ class CheckToggle extends Toggle {
 
         this.contents = {"default on": undefined, "default off": undefined, "hover on": undefined, "hover off": undefined, "pressed on": undefined, "pressed off": undefined};
     
-        this.padFactor = {"default on": 0.8, "default off": 0.8, "hover on": 0.8, "hover off": 0.8, "pressed on": 0.8, "pressed off": 0.8};
+        this.pad = {"default on": 0, "default off": 0, "hover on": 0, "hover off": 0, "pressed on": 0, "pressed off": 0};
     }
 
     render(x, y, context, contextX, contextY) {
@@ -4201,7 +4403,7 @@ class CheckToggle extends Toggle {
                 
                 if (this.contents[this.displayState]) {
                     if (this.contents[this.displayState].phantomVar == false) {
-                        let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+                        let scaleFactor = Math.min((this.width - 2*this.pad[this.displayState])/this.contents[this.displayState].width, (this.height - 2*this.pad[this.displayState])/this.contents[this.displayState].height)
                         context.translate(x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
                         context.scale(scaleFactor)
                         this.contents[this.displayState].render(contextX, contextY, context, contextX, contextY)
@@ -4226,7 +4428,7 @@ class CheckToggle extends Toggle {
                 
                 if (this.contents[this.displayState]) {
                     if (this.contents[this.displayState].phantomVar == false) {
-                        let scaleFactor = Math.min(this.width/this.contents[this.displayState].width, this.height/this.contents[this.displayState].height)*this.padFactor[this.displayState]
+                        let scaleFactor = Math.min((this.width - 2*this.pad[this.displayState])/this.contents[this.displayState].width, (this.height - 2*this.pad[this.displayState])/this.contents[this.displayState].height)
                         translate(this.x + this.width/2 - this.contents[this.displayState].width/2*scaleFactor, this.y + this.height/2 - this.contents[this.displayState].height/2*scaleFactor)
                         scale(scaleFactor)
                         this.contents[this.displayState].render(0, 0)
@@ -4279,24 +4481,24 @@ class CheckToggle extends Toggle {
         return this;
     }
 
-    paddingFactor(value, when) {
+    padding(value, when) {
         this.checkWhen(when, () => {
-            this.padFactor[when] = value;
+            this.pad[when] = value;
         }, () => {
-            this.padFactor["default on"] = value;
-            this.padFactor["default off"] = value;
-            this.padFactor["hover on"] = value;
-            this.padFactor["hover off"] = value;
-            this.padFactor["pressed on"] = value;
-            this.padFactor["pressed off"] = value;
+            this.pad["default on"] = value;
+            this.pad["default off"] = value;
+            this.pad["hover on"] = value;
+            this.pad["hover off"] = value;
+            this.pad["pressed on"] = value;
+            this.pad["pressed off"] = value;
         }, () => {
-            this.padFactor[`${when} on`] = value;
-            this.padFactor[`${when} off`] = value;
+            this.pad[`${when} on`] = value;
+            this.pad[`${when} off`] = value;
         }, () => {
-            this.padFactor[`default ${when}`] = value;
-            this.padFactor[`hover ${when}`] = value;
-            this.padFactor[`pressed ${when}`] = value;
-        }, "check toggle paddingFactor")
+            this.pad[`default ${when}`] = value;
+            this.pad[`hover ${when}`] = value;
+            this.pad[`pressed ${when}`] = value;
+        }, "check toggle padding")
         return this;
     }
 }let doCanvasUIErrorLog = true;
