@@ -146,7 +146,7 @@ class Base {
         this.backgroundVar = Color.primary;
         this.borderVar = Color.transparent;
         this.borderWeightVar = 1;
-        this.cornerRadiusVar = [10, 10, 10, 10]
+        this.cornerRadiusVar = [0, 0, 0, 0];
     }
 
     render(x, y, context, contextX, contextY) {
